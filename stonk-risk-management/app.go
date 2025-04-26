@@ -18,6 +18,7 @@ type App struct {
 	db              *database.DB
 	riskRepository  *database.RiskRepository
 	stockRepository *database.StockRepository
+	tradeRepository *database.TradeRepository
 }
 
 // NewApp creates a new App application struct
@@ -45,6 +46,7 @@ func (a *App) startup(ctx context.Context) {
 	a.db = db
 	a.riskRepository = database.NewRiskRepository(db)
 	a.stockRepository = database.NewStockRepository(db)
+	a.tradeRepository = database.NewTradeRepository(db)
 }
 
 // shutdown is called when the app is closing
@@ -87,6 +89,26 @@ func (a *App) SaveStockRating(rating *models.StockRating) error {
 // DeleteStockRating deletes a stock rating
 func (a *App) DeleteStockRating(id string) error {
 	return a.stockRepository.Delete(id)
+}
+
+// GetTrades returns all trades
+func (a *App) GetTrades() ([]*models.Trade, error) {
+	return a.tradeRepository.GetAll()
+}
+
+// SaveTrade saves a single trade leg
+// Note: Frontend is responsible for creating/updating all necessary legs for multi-leg trades.
+func (a *App) SaveTrade(trade *models.Trade) error {
+	// Basic validation before saving
+	if trade.Symbol == "" || trade.Sector == "" || trade.Strategy == "" || trade.Type == "" {
+		return fmt.Errorf("invalid trade data: missing required fields")
+	}
+	return a.tradeRepository.Save(trade)
+}
+
+// DeleteTrade deletes all legs associated with a trade ID
+func (a *App) DeleteTrade(id string) error {
+	return a.tradeRepository.Delete(id)
 }
 
 // Greet returns a greeting for the given name

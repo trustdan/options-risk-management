@@ -7,14 +7,20 @@ export function DeleteRiskAssessment(arg1:string):Promise<void>;
 
 export function DeleteStockRating(arg1:string):Promise<void>;
 
+export function DeleteTrade(arg1:string):Promise<void>;
+
 export function GetRiskAssessments():Promise<Array<models.RiskAssessment>>;
 
 export function GetStockRatings():Promise<Array<models.StockRating>>;
 
 export function GetStockRatingsByDate(arg1:time.Time):Promise<Array<models.StockRating>>;
 
+export function GetTrades():Promise<Array<models.Trade>>;
+
 export function Greet(arg1:string):Promise<string>;
 
 export function SaveRiskAssessment(arg1:models.RiskAssessment):Promise<void>;
 
 export function SaveStockRating(arg1:models.StockRating):Promise<void>;
+
+export function SaveTrade(arg1:models.Trade):Promise<void>;

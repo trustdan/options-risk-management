@@ -98,6 +98,27 @@ func (d *DB) GetAllWithPrefix(prefix string) ([][]byte, error) {
 	return values, err
 }
 
+// GetKeysWithPrefix retrieves all keys matching a given prefix
+func (d *DB) GetKeysWithPrefix(prefix string) ([]string, error) {
+	var keys []string
+
+	err := d.db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false // We only need keys
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		prefixBytes := []byte(prefix)
+		for it.Seek(prefixBytes); it.ValidForPrefix(prefixBytes); it.Next() {
+			item := it.Item()
+			keys = append(keys, string(item.Key()))
+		}
+		return nil
+	})
+
+	return keys, err
+}
+
 // RunGC runs the garbage collector to free up space
 func (d *DB) RunGC() error {
 	return d.db.RunValueLogGC(0.5)

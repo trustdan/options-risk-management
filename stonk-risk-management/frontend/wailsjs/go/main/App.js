@@ -10,6 +10,10 @@ export function DeleteStockRating(arg1) {
   return window['go']['main']['App']['DeleteStockRating'](arg1);
 }
 
+export function DeleteTrade(arg1) {
+  return window['go']['main']['App']['DeleteTrade'](arg1);
+}
+
 export function GetRiskAssessments() {
   return window['go']['main']['App']['GetRiskAssessments']();
 }
@@ -22,6 +26,10 @@ export function GetStockRatingsByDate(arg1) {
   return window['go']['main']['App']['GetStockRatingsByDate'](arg1);
 }
 
+export function GetTrades() {
+  return window['go']['main']['App']['GetTrades']();
+}
+
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
@@ -32,4 +40,8 @@ export function SaveRiskAssessment(arg1) {
 
 export function SaveStockRating(arg1) {
   return window['go']['main']['App']['SaveStockRating'](arg1);
+}
+
+export function SaveTrade(arg1) {
+  return window['go']['main']['App']['SaveTrade'](arg1);
 }
