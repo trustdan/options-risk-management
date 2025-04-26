@@ -101,6 +101,8 @@
     --border-color: #e2e8f0;
     --input-bg: white;
     --input-border: #cbd5e0;
+    --primary-button: #38b2ac;
+    --secondary-button: #e2e8f0;
   }
   
   :global(body.dark-mode) {
@@ -118,6 +120,8 @@
     --border-color: #4a5568;
     --input-bg: #2d3748;
     --input-border: #4a5568;
+    --primary-button: #f05252;
+    --secondary-button: #4a5568;
   }
 
   :global(body) {

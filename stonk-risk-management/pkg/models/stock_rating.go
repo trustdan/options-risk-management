@@ -14,6 +14,8 @@ type StockRating struct {
 	PriceTarget    float64   `json:"priceTarget"`    // Optional price target
 	Confidence     int       `json:"confidence"`     // 1-10 scale
 	Notes          string    `json:"notes"`          // Optional notes about the rating
+	Enthusiasm     int       `json:"enthusiasm"`     // 0-10 scale for enthusiasm
+	ChartPattern   string    `json:"chartPattern"`   // Comma-separated list of chart patterns
 }
 
 // NewStockRating creates a new stock rating with the current date

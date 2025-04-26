@@ -1230,6 +1230,8 @@
     border-radius: 0;
     border-left: none;
     border-right: none;
+    border-top: 2px dashed rgba(255, 255, 255, 0.7);
+    border-bottom: 2px dashed rgba(255, 255, 255, 0.7);
     position: relative;
     z-index: 1;
   }
@@ -1265,11 +1267,12 @@
   }
   
   .add-trade-section {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 5px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     margin-bottom: 2rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .trade-form {
@@ -1297,7 +1300,7 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: bold;
-    color: #4a5568;
+    color: inherit;
   }
   
   .form-group input,
@@ -1305,9 +1308,11 @@
   .form-group textarea {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--input-border);
     border-radius: 4px;
     font-size: 0.9rem;
+    background-color: var(--input-bg);
+    color: var(--text-color);
   }
   
   .form-group textarea {
@@ -1318,17 +1323,17 @@
   .strategy-description {
     margin-top: 0.5rem;
     padding: 0.75rem;
-    background-color: #f7fafc;
+    background-color: var(--bg-color);
     border-radius: 4px;
     font-size: 0.9rem;
-    color: #4a5568;
-    border-left: 3px solid #4299e1;
+    color: inherit;
+    border-left: 3px solid var(--active-button);
   }
   
   .date-guidance {
     margin-top: 0.25rem;
     font-size: 0.8rem;
-    color: #718096;
+    color: #cbd5e0;
   }
   
   .week-options {
@@ -1342,7 +1347,7 @@
   
   .week-option {
     padding: 0.2rem 0.4rem;
-    background-color: #edf2f7;
+    background-color: var(--bg-color);
     border-radius: 3px;
     font-size: 0.75rem;
   }
@@ -1350,7 +1355,7 @@
   .additional-expirations {
     margin-bottom: 1rem;
     padding: 1rem;
-    background-color: #f8f9fa;
+    background-color: var(--bg-color);
     border-radius: 4px;
   }
   
@@ -1391,7 +1396,7 @@
   }
   
   .additional-note {
-    color: #718096;
+    color: #cbd5e0;
     font-size: 0.9rem;
     font-style: italic;
     margin: 0.5rem 0 0;
@@ -1585,6 +1590,70 @@
   }
   
   :global(body.dark-mode) .reset-btn {
+    background-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  :global(body.dark-mode) .add-trade-section {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+  }
+  
+  :global(body.dark-mode) .date-guidance,
+  :global(body.dark-mode) .additional-note {
+    color: #cbd5e0;
+  }
+  
+  :global(body.dark-mode) .form-group input,
+  :global(body.dark-mode) .form-group select,
+  :global(body.dark-mode) .form-group textarea {
+    border-color: #4a5568;
+  }
+  
+  :global(body.dark-mode) .week-option {
+    background-color: #4a5568;
+    color: #e2e8f0;
+  }
+
+  .calendar-section {
+    background-color: var(--card-bg);
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    background-color: var(--primary-button);
+    color: white;
+  }
+
+  button.secondary {
+    background-color: var(--secondary-button);
+    color: var(--text-color);
+  }
+
+  button:hover {
+    opacity: 0.9;
+  }
+
+  button:disabled {
+    background-color: #a0aec0;
+    cursor: not-allowed;
+  }
+
+  :global(body.dark-mode) .calendar-section {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+  }
+
+  :global(body.dark-mode) button.secondary {
     background-color: #4a5568;
     color: #e2e8f0;
   }

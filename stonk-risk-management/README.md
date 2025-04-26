@@ -68,6 +68,46 @@ Run the development server with:
 wails dev
 ```
 
+### Common Issues & Solutions
+
+#### Date Handling in JavaScript/Go Applications
+When working with dates between JavaScript frontend and Go backend:
+
+1. **ISO String Format**: Always convert JavaScript Date objects to ISO strings before sending to Go:
+   ```javascript
+   // Correct way to send dates to Go backend
+   const dateStr = new Date(date).toISOString().split('T')[0];
+   const formattedDate = `${dateStr}T00:00:00Z`; // Use complete ISO format
+   ```
+
+2. **Date Comparison**: When comparing dates, convert both to the same format first:
+   ```javascript
+   // Convert both dates to YYYY-MM-DD format before comparing
+   const date1 = new Date(firstDate).toISOString().split('T')[0];
+   const date2 = new Date(secondDate).toISOString().split('T')[0];
+   const datesMatch = date1 === date2;
+   ```
+
+3. **Using Wails Models**: When using generated model classes, create objects with `createFrom()`:
+   ```javascript
+   import { models } from '../wailsjs/go/models';
+   
+   // Create data object
+   const ratingData = {
+     id: existingRating ? existingRating.id : '',
+     date: formattedDate, // ISO string, not Date object
+     // other properties...
+   };
+   
+   // Create proper model instance
+   const ratingToSave = models.StockRating.createFrom(ratingData);
+   
+   // Send to backend
+   await SaveStockRating(ratingToSave);
+   ```
+
+These solutions address common issues with time.Time unmarshalling errors in Go and date comparison mismatches in JavaScript.
+
 ## License
 MIT
 

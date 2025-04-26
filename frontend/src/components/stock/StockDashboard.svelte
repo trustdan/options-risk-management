@@ -83,19 +83,53 @@
     if (dateIndex > 0) loadDate(dateIndex - 1);
   }
   
-  async function saveRating(event) {
+  async function saveStockRating() {
     try {
-      const rating = event.detail;
-      await window.go.main.App.SaveStockRating(rating);
-      await loadAllRatings();
+      // Ensure enthusiasm is a number
+      const enthusiasmValue = parseInt(rating.enthusiasm.toString(), 10) || 0;
       
-      // Reset the form
-      resetNewRating(dates[dateIndex]);
+      // Create a compatible object for saving
+      const ratingToSave = {
+        id: rating.id || '',
+        date: new Date(rating.date),
+        symbol: rating.symbol,
+        sector: rating.sector,
+        stockSentiment: rating.stockSentiment,
+        priceTarget: rating.priceTarget || 0,
+        confidence: rating.confidence || 0,
+        // Explicitly set enthusiasm
+        enthusiasm: enthusiasmValue,
+        // Convert chartPatterns array to a string
+        chartPattern: rating.chartPatterns.join(', '),
+        // Store original data in notes if needed
+        notes: rating.notes
+      };
+
+      console.log('Saving rating with explicit fields:', ratingToSave);
+      await SaveStockRating(ratingToSave);
       
-      showToast("Stock rating saved successfully!");
+      // Refresh ratings
+      await refreshRatings();
+      
+      // Clear form for next entry
+      rating = {
+        id: '',
+        date: rating.date,
+        symbol: '',
+        sector: '',
+        stockSentiment: 0,
+        priceTarget: 0,
+        confidence: 0,
+        chartPatterns: [],
+        selectedPattern: '',
+        enthusiasm: 0,
+        notes: ''
+      };
+      
+      alert('Stock rating saved successfully');
     } catch (error) {
-      console.error("Failed to save stock rating:", error);
-      showToast("Error saving stock rating", true);
+      console.error('Failed to save rating:', error);
+      alert('Failed to save rating: ' + error.message);
     }
   }
   
@@ -103,6 +137,12 @@
     if (!confirm('Are you sure you want to delete this rating?')) return;
     
     try {
+      console.log('Deleting rating with ID:', id);
+      if (!id) {
+        console.error('No ID provided for deletion');
+        showToast("Error: No ID provided for deletion", true);
+        return;
+      }
       await window.go.main.App.DeleteStockRating(id);
       await loadAllRatings();
       showToast("Rating deleted successfully!");
@@ -127,6 +167,21 @@
         }, 300);
       }, 3000);
     }, 100);
+  }
+  
+  // Enhance the logRecentRatings function for better debugging
+  function logRecentRatings() {
+    console.log("Recent ratings:", recentRatings);
+    if (recentRatings.length > 0) {
+      recentRatings.forEach(r => {
+        console.log(`Rating ID: ${r.id}`);
+        console.log(`Symbol: ${r.symbol}, Sector: ${r.sector}`);
+        console.log(`Sentiment: ${r.stockSentiment}, Enthusiasm: ${r.enthusiasm} (type: ${typeof r.enthusiasm})`);
+        console.log(`Chart Pattern: ${r.chartPattern} (type: ${typeof r.chartPattern})`);
+        console.log('Full object:', r);
+        console.log('---');
+      });
+    }
   }
 </script>
 
@@ -207,7 +262,11 @@
               </div>
               <button 
                 class="delete-btn" 
-                on:click={() => deleteRating(rating.id)}
+                on:click={() => {
+                  console.log('Delete clicked for rating:', rating);
+                  console.log('ID to delete:', rating.id);
+                  deleteRating(rating.id);
+                }}
               >
                 Delete
               </button>
@@ -219,7 +278,7 @@
       <h3>Add New Rating</h3>
       <StockForm 
         bind:data={newRating} 
-        on:save={saveRating} 
+        on:save={saveStockRating} 
       />
     </div>
   {:else if activeTab === 'analytics'}

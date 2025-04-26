@@ -51,6 +51,8 @@ export namespace models {
 	    priceTarget: number;
 	    confidence: number;
 	    notes: string;
+	    enthusiasm: number;
+	    chartPattern: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new StockRating(source);
@@ -66,6 +68,8 @@ export namespace models {
 	        this.priceTarget = source["priceTarget"];
 	        this.confidence = source["confidence"];
 	        this.notes = source["notes"];
+	        this.enthusiasm = source["enthusiasm"];
+	        this.chartPattern = source["chartPattern"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
