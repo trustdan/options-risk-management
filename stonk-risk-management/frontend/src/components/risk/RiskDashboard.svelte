@@ -219,37 +219,38 @@
 
 <style>
   .dashboard {
-    max-width: 1000px;
     margin: 0 auto;
     padding: 2rem;
-    background-color: white;
+    background-color: var(--content-bg);
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   h2 {
-    color: #2d3748;
+    color: inherit;
     text-align: center;
     margin-bottom: 0;
   }
   
   .divider {
     height: 2px;
-    background-color: #e2e8f0;
+    background-color: var(--border-color);
     margin: 1rem 0 2rem;
   }
   
   .description {
     text-align: center;
-    color: #4a5568;
+    color: inherit;
     margin-bottom: 2rem;
   }
   
   .assessment-form {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 5px;
     margin-bottom: 2rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .date-picker {
@@ -276,7 +277,7 @@
   
   .slider-group h3 {
     margin-bottom: 0.5rem;
-    color: #2d3748;
+    color: inherit;
   }
   
   .slider-group input[type="range"] {
@@ -306,7 +307,7 @@
   }
   
   .save-btn {
-    background-color: #4299e1;
+    background-color: var(--active-button);
     color: white;
     padding: 0.75rem 2rem;
     border: none;
@@ -321,10 +322,11 @@
   }
   
   .recommendation {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 5px;
     margin-bottom: 2rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .position-bar {
@@ -366,9 +368,10 @@
   }
   
   .guidelines {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .guidelines-grid {
@@ -380,17 +383,18 @@
   
   .guideline-item {
     padding: 1rem;
-    background-color: #f7fafc;
+    background-color: var(--bg-color);
     border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .guideline-item h3 {
-    color: #38a169;
+    color: var(--active-button);
     margin-bottom: 0.5rem;
   }
   
   .guideline-item p {
-    color: #4a5568;
+    color: inherit;
     font-size: 0.95rem;
   }
 </style> 

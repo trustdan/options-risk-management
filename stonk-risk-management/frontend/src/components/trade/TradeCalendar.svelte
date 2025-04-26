@@ -21,6 +21,7 @@
     'Utilities',
     'Real Estate',
     'Communication',
+    'ETF',
     'Others'
   ];
   
@@ -1085,13 +1086,14 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 2rem;
-    background-color: white;
+    background-color: var(--content-bg);
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   h2, h3, h4 {
-    color: #2d3748;
+    color: inherit;
     margin-top: 0;
   }
   
@@ -1102,18 +1104,18 @@
   
   .divider {
     height: 2px;
-    background-color: #e2e8f0;
+    background-color: var(--border-color);
     margin: 1rem 0 2rem;
   }
   
   .description {
     text-align: center;
-    color: #4a5568;
+    color: inherit;
     margin-bottom: 2rem;
   }
   
   .strategy-guide {
-    background-color: #f7fafc;
+    background-color: var(--bg-color);
     padding: 1rem;
     border-radius: 5px;
     margin-bottom: 2rem;
@@ -1150,18 +1152,18 @@
   .calendar {
     width: 100%;
     border-collapse: collapse;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
   }
   
   .sector-header {
     width: 150px;
     text-align: left;
-    background-color: #f7fafc;
+    background-color: var(--bg-color);
   }
   
   .week-header {
     min-width: 120px;
-    background-color: #f7fafc;
+    background-color: var(--bg-color);
     text-align: center;
     font-size: 0.9rem;
     padding: 0.5rem;
@@ -1179,12 +1181,12 @@
   .sector-cell {
     padding: 0.75rem;
     font-weight: 500;
-    border: 1px solid #e2e8f0;
-    background-color: #f7fafc;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
   }
   
   .trade-cell {
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     padding: 0.5rem;
     vertical-align: top;
     height: 80px;
@@ -1194,7 +1196,7 @@
   }
   
   .trade-cell.has-trades {
-    background-color: rgba(247, 250, 252, 0.3);
+    background-color: rgba(247, 250, 252, 0.1);
   }
   
   .trade-card {
@@ -1411,12 +1413,12 @@
   }
   
   .reset-btn {
-    background-color: #e2e8f0;
-    color: #4a5568;
+    background-color: var(--border-color);
+    color: inherit;
   }
   
   .add-btn {
-    background-color: #4299e1;
+    background-color: var(--active-button);
     color: white;
   }
   
@@ -1429,10 +1431,11 @@
   }
   
   .trade-history {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 5px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .search-section {
@@ -1443,9 +1446,11 @@
   .search-input {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--input-border);
     border-radius: 4px;
     margin-bottom: 1rem;
+    background-color: var(--input-bg);
+    color: var(--text-color);
   }
   
   .search-filters {
@@ -1479,16 +1484,16 @@
   .trades-table th {
     text-align: left;
     padding: 0.75rem;
-    background-color: #f7fafc;
-    color: #4a5568;
+    background-color: var(--bg-color);
+    color: inherit;
     font-weight: 600;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 2px solid var(--border-color);
   }
   
   .trades-table td {
     padding: 0.75rem;
-    border-bottom: 1px solid #e2e8f0;
-    color: #2d3748;
+    border-bottom: 1px solid var(--border-color);
+    color: inherit;
   }
   
   .ticker-cell {
@@ -1547,7 +1552,7 @@
   }
   
   .refresh-btn {
-    background-color: #4299e1;
+    background-color: var(--active-button);
     color: white;
     border: none;
     border-radius: 4px;
@@ -1561,5 +1566,26 @@
   
   .refresh-btn:hover {
     background-color: #3182ce;
+  }
+  
+  :global(body.dark-mode) .sector-cell,
+  :global(body.dark-mode) .week-header,
+  :global(body.dark-mode) .trades-table th {
+    background-color: #2d3748;
+    color: #e2e8f0;
+  }
+  
+  :global(body.dark-mode) .trade-cell.has-trades {
+    background-color: rgba(45, 55, 72, 0.3);
+  }
+  
+  :global(body.dark-mode) .refresh-btn,
+  :global(body.dark-mode) .add-btn {
+    background-color: #4fd1c5;
+  }
+  
+  :global(body.dark-mode) .reset-btn {
+    background-color: #4a5568;
+    color: #e2e8f0;
   }
 </style> 

@@ -303,13 +303,14 @@
     max-width: 1000px;
     margin: 0 auto;
     padding: 2rem;
-    background-color: white;
+    background-color: var(--content-bg);
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   h2, h3, h4, h5 {
-    color: #2d3748;
+    color: inherit;
     margin-top: 0;
     margin-bottom: 0.5rem;
   }
@@ -321,13 +322,13 @@
   
   .divider {
     height: 2px;
-    background-color: #e2e8f0;
+    background-color: var(--border-color);
     margin: 1rem 0 2rem;
   }
   
   .description {
     text-align: center;
-    color: #4a5568;
+    color: inherit;
     margin-bottom: 2rem;
   }
   
@@ -339,10 +340,11 @@
   }
   
   .rating-section {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 5px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .date-picker {
@@ -358,8 +360,10 @@
   
   .date-picker input {
     padding: 0.5rem;
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--input-border);
     border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
   }
   
   .input-group {
@@ -375,8 +379,10 @@
   .input-group input, .input-group select {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--input-border);
     border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
   }
   
   .dual-inputs {
@@ -417,7 +423,7 @@
   .scrollable-sectors {
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-color);
     padding: 1rem;
     border-radius: 4px;
   }
@@ -442,12 +448,12 @@
   }
   
   .reset-btn {
-    background-color: #e2e8f0;
-    color: #4a5568;
+    background-color: var(--border-color);
+    color: inherit;
   }
   
   .save-btn {
-    background-color: #4299e1;
+    background-color: var(--active-button);
     color: white;
   }
   
@@ -462,19 +468,20 @@
   .info-btn {
     margin-top: 0.5rem;
     padding: 0.25rem 0.5rem;
-    background-color: #e2e8f0;
+    background-color: var(--border-color);
     border: none;
     border-radius: 4px;
-    color: #4a5568;
+    color: inherit;
     font-size: 0.8rem;
     cursor: pointer;
   }
   
   .recent-ratings {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 1.5rem;
     border-radius: 5px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .ratings-table {
@@ -488,13 +495,14 @@
   }
   
   thead {
-    background-color: #f7fafc;
+    background-color: var(--bg-color);
   }
   
   th, td {
     padding: 0.75rem 1rem;
     text-align: left;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
+    color: inherit;
   }
   
   .positive {
@@ -507,5 +515,39 @@
   
   .neutral {
     color: #718096;
+  }
+  
+  :global(body.dark-mode) .tabs button.active {
+    border-bottom: 3px solid #4fd1c5;
+  }
+  
+  :global(body.dark-mode) .rating-card {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  :global(body.dark-mode) .sector {
+    background-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  :global(body.dark-mode) .reset-btn {
+    background-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  :global(body.dark-mode) .save-btn {
+    background-color: #4fd1c5;
+    color: white;
+  }
+  
+  :global(body.dark-mode) thead {
+    background-color: #2d3748;
+  }
+  
+  :global(body.dark-mode) th, 
+  :global(body.dark-mode) td {
+    border-color: #4a5568;
   }
 </style> 
