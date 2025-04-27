@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { DeleteStockRating } from '../../../wailsjs/go/main/App';
   
   export let ratings = [];
   let chartCanvas;
@@ -19,13 +20,30 @@
   ];
   let selectedSectors = [];
   let sectorToggleFilters = {};
+  let marketAndSectorRatings = [];
+  let ratingsByDate = [];
   
   $: {
     if (ratings && ratings.length) {
+      // Filter out market and sector ratings for the table
+      marketAndSectorRatings = ratings.filter(r => 
+        r.symbol === 'MARKET' || r.symbol === 'SECTOR'
+      ).sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateB - dateA;
+      });
+      
+      // Group ratings by date for summary table
+      ratingsByDate = groupRatingsByDate(marketAndSectorRatings);
+      
       initializeSectorToggles();
       if (chartCanvas) {
         renderChart();
       }
+    } else {
+      // Initialize to empty array when no ratings available
+      ratingsByDate = [];
     }
   }
   
@@ -260,6 +278,120 @@
       }
     });
   }
+  
+  // Function to group ratings by date
+  function groupRatingsByDate(ratings) {
+    // Create object to hold grouped data
+    const grouped = {};
+    
+    ratings.forEach(rating => {
+      const date = new Date(rating.date);
+      // Get just the date part in ISO format (YYYY-MM-DD)
+      const dateStr = date.toISOString().split('T')[0];
+      
+      if (!grouped[dateStr]) {
+        grouped[dateStr] = {
+          date: dateStr,
+          formattedDate: formatDateShort(date),
+          ratings: [],
+          marketCount: 0,
+          sectorCount: 0
+        };
+      }
+      
+      grouped[dateStr].ratings.push(rating);
+      
+      if (rating.symbol === 'MARKET') {
+        grouped[dateStr].marketCount++;
+      } else if (rating.symbol === 'SECTOR') {
+        grouped[dateStr].sectorCount++;
+      }
+    });
+    
+    // Convert to array and sort by date (descending)
+    const result = [];
+    for (const dateStr in grouped) {
+      result.push(grouped[dateStr]);
+    }
+    
+    return result.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
+  }
+  
+  // Handle bulk deletion of ratings for a specific date
+  async function deleteRatingsByDate(dateStr, ratings) {
+    if (!confirm(`Are you sure you want to delete ALL ratings for ${formatDateShort(new Date(dateStr))}?`)) {
+      return;
+    }
+    
+    try {
+      const idsToDelete = ratings.map(r => r.id);
+      console.log(`Deleting ${idsToDelete.length} ratings for date ${dateStr}`);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Delete each rating individually
+      for (const id of idsToDelete) {
+        try {
+          await DeleteStockRating(id);
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to delete rating ${id}:`, error);
+          errorCount++;
+        }
+      }
+      
+      // Update the arrays to remove the deleted ratings
+      if (successCount > 0) {
+        // Remove all ratings for this date from our ratings array
+        const deletedIds = new Set(idsToDelete);
+        ratings = ratings.filter(r => !deletedIds.has(r.id));
+        marketAndSectorRatings = marketAndSectorRatings.filter(r => !deletedIds.has(r.id));
+        
+        // Regenerate the grouped ratings
+        ratingsByDate = groupRatingsByDate(marketAndSectorRatings);
+        
+        // Refresh the chart
+        renderChart();
+      }
+      
+      // Show results
+      if (errorCount === 0) {
+        alert(`Successfully deleted all ${successCount} ratings for ${formatDateShort(new Date(dateStr))}`);
+      } else {
+        alert(`Deleted ${successCount} ratings, but failed to delete ${errorCount} ratings for ${formatDateShort(new Date(dateStr))}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete ratings:', error);
+      alert('An error occurred while deleting ratings: ' + error.message);
+    }
+  }
+  
+  // Format date for display (full format)
+  function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  
+  // Format date for display (shorter format)
+  function formatDateShort(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
 </script>
 
 <div class="analytics">
@@ -301,34 +433,41 @@
       <canvas bind:this={chartCanvas}></canvas>
     </div>
     
-    <div class="stats">
-      <div class="stats-section">
-        <h3>Latest Ratings</h3>
-        <div class="rating-grid">
-          <div class="rating-item market-item">
-            <span class="rating-name">Overall Market</span>
-            <span class="rating-value">
-              {#if ratings.find(r => r.symbol === 'MARKET')}
-                {ratings.filter(r => r.symbol === 'MARKET').sort((a, b) => new Date(b.date) - new Date(a.date))[0].stockSentiment}
-              {:else}
-                N/A
-              {/if}
-            </span>
-          </div>
-          
-          {#each sectors as sector}
-            <div class="rating-item">
-              <span class="rating-name">{sector}</span>
-              <span class="rating-value">
-                {#if ratings.find(r => r.symbol === 'SECTOR' && r.sector === sector)}
-                  {ratings.filter(r => r.symbol === 'SECTOR' && r.sector === sector).sort((a, b) => new Date(b.date) - new Date(a.date))[0].stockSentiment}
-                {:else}
-                  N/A
-                {/if}
-              </span>
-            </div>
-          {/each}
-        </div>
+    <div class="ratings-table-container">
+      <h3>All Rating Entries</h3>
+      <p class="table-instructions">View and manage all market and sector ratings by date. Delete all ratings for a given day.</p>
+      
+      <div class="ratings-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Market Ratings</th>
+              <th>Sector Ratings</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#if ratingsByDate.length > 0}
+              {#each ratingsByDate as dateGroup}
+                <tr>
+                  <td>{dateGroup.formattedDate}</td>
+                  <td>{dateGroup.marketCount}</td>
+                  <td>{dateGroup.sectorCount}</td>
+                  <td>
+                    <button class="delete-btn" on:click={() => deleteRatingsByDate(dateGroup.date, dateGroup.ratings)}>
+                      Delete All
+                    </button>
+                  </td>
+                </tr>
+              {/each}
+            {:else}
+              <tr>
+                <td colspan="4">No market or sector ratings available</td>
+              </tr>
+            {/if}
+          </tbody>
+        </table>
       </div>
     </div>
   {/if}
@@ -336,7 +475,7 @@
 
 <style>
   .analytics {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 1rem;
     color: var(--text-color);
@@ -371,6 +510,13 @@
     color: var(--text-color-muted);
     text-align: center;
     margin-bottom: 0.5rem;
+  }
+  
+  .table-instructions {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    text-align: center;
+    margin-bottom: 1rem;
   }
   
   .toggle-group {
@@ -427,53 +573,62 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
   
-  .stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    justify-content: center;
-  }
-  
-  .stats-section {
-    flex: 1;
-    min-width: 300px;
+  .ratings-table-container {
     background-color: var(--card-bg);
-    padding: 1rem;
     border-radius: 8px;
+    padding: 1rem;
+    margin-top: 2rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
   
-  .rating-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 0.75rem;
+  .ratings-table {
+    overflow-x: auto;
   }
   
-  .rating-item {
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  thead {
     background-color: var(--bg-color);
-    padding: 0.5rem;
+  }
+  
+  th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    color: inherit;
+  }
+  
+  .positive {
+    color: #38a169;
+  }
+  
+  .negative {
+    color: #e53e3e;
+  }
+  
+  .neutral {
+    color: inherit;
+    opacity: 0.8;
+  }
+  
+  .delete-btn {
+    background-color: #e53e3e;
+    color: white;
+    border: none;
     border-radius: 4px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
   }
   
-  .market-item {
-    background-color: rgba(255, 215, 0, 0.1);
-    border-color: rgba(255, 215, 0, 0.4);
-    grid-column: 1 / -1;
-    padding: 0.75rem;
+  .delete-btn:hover {
+    opacity: 0.9;
   }
   
-  .rating-name {
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-  }
-  
-  .rating-value {
-    font-size: 1.5rem;
-    font-weight: bold;
-  }
+  /* Keep existing styles... */
 </style> 

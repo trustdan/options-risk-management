@@ -5,10 +5,9 @@
   
   // Import components for the analytics views
   import MarketAnalytics from './MarketAnalytics.svelte';
-  import StockAnalytics from './StockAnalytics.svelte';
   
   // Active tab state
-  let activeTab = 'rating'; // 'rating', 'marketAnalytics', or 'stockAnalytics'
+  let activeTab = 'rating'; // 'rating' or 'marketAnalytics'
   
   // Sample sectors
   const sectors = [
@@ -647,12 +646,6 @@
     >
       Market Analytics
     </button>
-    <button 
-      class:active={activeTab === 'stockAnalytics'} 
-      on:click={() => activeTab = 'stockAnalytics'}
-    >
-      Stock Analytics
-    </button>
   </div>
   
   {#if activeTab === 'rating'}
@@ -931,8 +924,6 @@
     </div>
   {:else if activeTab === 'marketAnalytics'}
     <MarketAnalytics ratings={allRatings} />
-  {:else if activeTab === 'stockAnalytics'}
-    <StockAnalytics ratings={allRatings} />
   {/if}
 </div>
 
