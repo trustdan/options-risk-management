@@ -1,5 +1,5 @@
 @echo off
-echo Stonk Risk Management Build Script
+echo Options Risk Management Build Script
 echo ================================
 echo.
 

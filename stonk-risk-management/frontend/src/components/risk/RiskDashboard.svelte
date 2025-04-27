@@ -522,6 +522,61 @@
           <h3>✓ Implement Circuit Breakers</h3>
           <p>Have predefined rules for when to stop trading (e.g., after 2-3 consecutive losses).</p>
         </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Your First Loss Is Your Best Loss</h3>
+          <p>Taking small initial losses prevents the much larger losses that come from hoping positions will recover.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Process Over Outcome</h3>
+          <p>Focus on execution quality rather than profit/loss, as proper process leads to long-term results.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ No Single Trade Should Matter</h3>
+          <p>If any individual trade can substantially impact your account, your position sizing is excessive.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ When Confused, Reduce Size</h3>
+          <p>Uncertainty should trigger immediate risk reduction rather than hoping for clarity.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ The Trade Journal Is Your Map</h3>
+          <p>Systematic recording of your trades provides the objective feedback necessary for improvement.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Winners Take Small Losses By Choice</h3>
+          <p>Proactive risk management prevents the catastrophic losses that destroy accounts.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Follow Rules Absolutely On Bad Days</h3>
+          <p>Adherence to your trading plan is most critical precisely when emotions are strongest.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Daily Loss Limit As Circuit Breaker</h3>
+          <p>Automatic trading cessation after reaching a specific drawdown protects you from poor decisions.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ The Market Doesn't Know You Exist</h3>
+          <p>Markets respond to supply and demand, not to your hopes, fears, or needs.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Avoid The Revenge Trade</h3>
+          <p>Trades taken to recover losses typically compound those losses by bypassing risk management.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ A Great Trader Knows When Not To Trade</h3>
+          <p>The ability to stay on the sidelines during unfavorable conditions preserves capital.</p>
+        </div>
       </div>
     </div>
   <!-- Analytics Tab Content -->
@@ -828,8 +883,8 @@
   
   .guidelines-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
     margin-top: 1.5rem;
   }
   
@@ -837,16 +892,24 @@
     background-color: rgba(0, 0, 0, 0.03);
     padding: 1rem;
     border-radius: 5px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .guideline-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
   
   .guideline-item h3 {
     margin-top: 0;
     font-size: 1rem;
+    color: var(--primary-button);
   }
   
   .guideline-item p {
     margin: 0;
     font-size: 0.9rem;
+    line-height: 1.4;
   }
   
   @media (max-width: 768px) {

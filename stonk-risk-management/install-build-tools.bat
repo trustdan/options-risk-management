@@ -1,5 +1,5 @@
 @echo off
-echo Stonk Risk Management - Build Tools Installer
+echo Options Risk Management - Build Tools Installer
 echo ================================================
 echo.
 
