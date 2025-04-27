@@ -5,6 +5,8 @@
 ![image](https://github.com/user-attachments/assets/3047d2cf-5620-438d-9f66-cd5c446eb3f2)
 ![image](https://github.com/user-attachments/assets/eba31f1e-aafa-44ca-913f-fd46f8b82acb)
 ![image](https://github.com/user-attachments/assets/30a4cbbe-c098-4c20-9000-ee4a92f0075e)
+![image](https://github.com/user-attachments/assets/c1cab197-c490-4dcf-9771-a1814d31810f)
+
 
 
 ## Trade With Confidence Through Better Psychology
