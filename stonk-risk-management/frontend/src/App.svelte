@@ -14,6 +14,22 @@
   let stockDashboardComponent;
   let tradeCalendarComponent;
   
+  // Determine data directory path based on operating system
+  function getDataPath() {
+    const isWindows = navigator.platform.indexOf('Win') !== -1;
+    if (isWindows) {
+      return `C:\\Users\\<YourUsername>\\.options-risk-management 
+      
+(Replace <YourUsername> with your Windows username)`;
+    } else {
+      return `/home/<YourUsername>/.options-risk-management
+      
+(Replace <YourUsername> with your username)`;
+    }
+  }
+  
+  const dataPath = getDataPath();
+  
   function switchView(view) {
     activeView = view;
   }
@@ -28,6 +44,39 @@
       WindowSetLightTheme();
       document.body.classList.remove('dark-mode');
     }
+  }
+  
+  // Export data function
+  function exportData() {
+    const message = `EXPORT DATA INSTRUCTIONS:
+
+Your data is stored in:
+${dataPath}
+
+To export your data:
+1. Navigate to this directory in your file explorer
+2. Copy the entire folder or its contents to your backup location
+3. All your risk assessments, stock ratings, and trades are stored in this directory
+
+Note: The app must be closed before copying to ensure all data is properly saved.`;
+    alert(message);
+  }
+  
+  // Import data function
+  function importData() {
+    const message = `IMPORT DATA INSTRUCTIONS:
+
+Your data should be placed in:
+${dataPath}
+
+To import your data:
+1. Ensure the app is closed
+2. Navigate to this directory in your file explorer
+3. Copy your backed-up files into this directory, replacing any existing files
+4. Start the application again to see your imported data
+
+Warning: This will overwrite any existing data in the application. Make a backup first if needed.`;
+    alert(message);
   }
   
   // Function to refresh the entire application
@@ -96,6 +145,12 @@
     <div class="header-content">
       <h1>Options Trading Dashboard</h1>
       <div class="header-right">
+        <button class="data-btn" on:click={exportData} title="Export your data">
+          💾 Export Data
+        </button>
+        <button class="data-btn" on:click={importData} title="Import your data">
+          📥 Import Data
+        </button>
         <a href="https://docs.google.com/forms/d/e/1FAIpQLSdy5CEPbAFFli589aR1DPEVUJli5MxRNYsl8PmS4E-srgt7IA/viewform" target="_blank" class="feedback-btn" title="Provide Feedback">
           📝 Feedback
         </a>
@@ -286,6 +341,27 @@
     align-items: center;
     gap: 1rem;
     margin-right: 100px; /* Add space to avoid overlap with GitHub corner */
+  }
+  
+  .data-btn {
+    background-color: var(--secondary-button);
+    color: inherit;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-right: 0.5rem;
+  }
+  
+  .data-btn:hover {
+    background-color: var(--secondary-button-hover);
+    opacity: 0.9;
   }
   
   .feedback-btn {
