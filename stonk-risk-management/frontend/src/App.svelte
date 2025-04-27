@@ -3,6 +3,7 @@
   import StockDashboard from './components/stock/StockDashboard.svelte';
   import TradeCalendar from './components/trade/TradeCalendar.svelte';
   import TradingKoans from './components/koans/TradingKoans.svelte';
+  import PrivacyPolicy from './components/PrivacyPolicy.svelte';
   import { WindowSetDarkTheme, WindowSetLightTheme } from '../wailsjs/runtime/runtime';
   import { VERSION } from './version.js';
   import { RunDatabaseMaintenance } from '../wailsjs/go/main/App';
@@ -10,6 +11,7 @@
   let activeView = 'stock'; // Default to 'stock' view to match screenshots
   let isDarkMode = true; // Default to dark mode to match screenshots
   const version = "v" + VERSION;
+  let showPrivacyPolicy = false;
   
   // Reference to component instances
   let riskDashboardComponent;
@@ -225,8 +227,15 @@ Warning: This will overwrite any existing data in the application. Make a backup
   </div>
   
   <footer>
-    <p>© {new Date().getFullYear()} Options Risk Management - v{VERSION}</p>
+    <p>
+      © {new Date().getFullYear()} Options Risk Management - v{VERSION} | 
+      <a href="#privacy" on:click|preventDefault={() => showPrivacyPolicy = true}>Privacy Policy</a>
+    </p>
   </footer>
+  
+  {#if showPrivacyPolicy}
+    <PrivacyPolicy on:close={() => showPrivacyPolicy = false} />
+  {/if}
 </main>
 
 <style>
@@ -248,8 +257,8 @@ Warning: This will overwrite any existing data in the application. Make a backup
     --input-border: #cbd5e0;
     --primary-button: #38b2ac;
     --primary-button-hover: #319795;
-    --secondary-button: #e2e8f0;
-    --secondary-button-hover: #cbd5e0;
+    --secondary-button: #4a5568;
+    --secondary-button-hover: #3c4655;
     --text-secondary: #666;
     --success-color: #10b981;
     --danger-color: #ef4444;
@@ -359,63 +368,67 @@ Warning: This will overwrite any existing data in the application. Make a backup
   }
   
   .data-btn {
-    background-color: var(--secondary-button);
-    color: inherit;
+    background-color: transparent;
+    color: var(--header-text);
     border: none;
     padding: 0.5rem 0.75rem;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.9rem;
+    font-weight: bold;
     text-decoration: none;
     transition: all 0.2s ease;
     margin-right: 0.5rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   
   .data-btn:hover {
-    background-color: var(--secondary-button-hover);
-    opacity: 0.9;
+    background-color: var(--button-hover);
   }
   
   .feedback-btn {
-    background-color: var(--secondary-button);
-    color: inherit;
+    background-color: transparent;
+    color: var(--header-text);
     border: none;
     padding: 0.5rem 0.75rem;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 0.9rem;
+    font-weight: bold;
     text-decoration: none;
     transition: all 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   
   .feedback-btn:hover {
-    background-color: var(--secondary-button-hover);
-    opacity: 0.9;
+    background-color: var(--button-hover);
   }
   
   .refresh-btn {
-    background-color: var(--secondary-button);
-    color: inherit;
+    background-color: transparent;
+    color: var(--header-text);
     border: none;
     padding: 0.5rem;
-    border-radius: 4px;
+    border-radius: 0;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.9rem;
+    font-weight: bold;
+    text-decoration: none;
     transition: all 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   
   .refresh-btn:hover {
-    background-color: var(--secondary-button-hover);
-    transform: rotate(180deg);
+    background-color: var(--button-hover);
   }
   
   .version {
@@ -459,18 +472,20 @@ Warning: This will overwrite any existing data in the application. Make a backup
     font-weight: bold;
     transition: all 0.2s;
     border-radius: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   
   nav button:hover {
     background-color: var(--button-hover);
+    box-shadow: none;
   }
   
   nav button.active {
     background-color: var(--active-button);
     color: white;
+    text-shadow: none;
   }
   
-  /* Special styling for active tabs */
   body:not(.dark-mode) nav button.active {
     background-color: #38b2ac;
   }
@@ -532,6 +547,15 @@ Warning: This will overwrite any existing data in the application. Make a backup
     font-size: 0.8rem;
     color: var(--footer-text);
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  footer a {
+    color: var(--primary-button);
+    text-decoration: none;
+  }
+  
+  footer a:hover {
+    text-decoration: underline;
   }
   
   @media (max-width: 900px) {
