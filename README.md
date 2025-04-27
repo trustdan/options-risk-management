@@ -1,10 +1,10 @@
-# Stonk Risk Management
+# Options Trading Dashboard
 
 ![Risk Management Dashboard](https://placeholder-for-app-screenshot.png)
 
 ## Trade With Confidence Through Better Psychology
 
-**Stonk Risk Management** is a powerful desktop application designed to help stock and options traders take control of their trading psychology, manage risk effectively, and make more informed trading decisions.
+**Options Trading Dashboard** is a powerful desktop application designed to help stock and options traders take control of their trading psychology, manage risk effectively, and make more informed trading decisions.
 
 > "The difference between being a consistently profitable trader and a struggling one often comes down to psychology and risk management." 
 
@@ -68,7 +68,7 @@ Trading is as much about managing your mental state as it is about market analys
 ### Installation
 
 #### Windows
-1. Download the latest installer (`stonk-risk-management-setup-x.x.x.exe`) from the releases page
+1. Download the latest installer (`options-trading-dashboard-setup-x.x.x.exe`) from the releases page
 2. Run the installer and follow the on-screen instructions
 3. Launch the application from the Start menu or desktop shortcut
 
@@ -84,7 +84,7 @@ wails build
 ```
 
 ### Data Storage
-All your data is stored locally in `~/.stonk-risk-management` directory.
+All your data is stored locally in `~/.options-trading-dashboard` directory.
 
 ### Supported Options Strategies
 The application supports a comprehensive range of options trading strategies, including:
@@ -171,7 +171,7 @@ These solutions address common issues with time.Time unmarshalling errors in Go 
 
 If you encounter any issues with the application:
 
-1. **Check the logs**: Logs are stored in `~/.stonk-risk-management/logs`
+1. **Check the logs**: Logs are stored in `~/.options-trading-dashboard/logs`
 2. **Restart the application**: Many issues can be resolved with a simple restart
 3. **File an issue**: If problems persist, file an issue on the GitHub repository with:
    - The exact steps to reproduce the problem
