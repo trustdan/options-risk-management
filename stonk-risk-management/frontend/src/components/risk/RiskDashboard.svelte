@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { GetRiskAssessments, SaveRiskAssessment } from '../../../wailsjs/go/main/App';
+  import { maxDollarRiskPerTrade } from '../../store/riskStore.js';
   
   // Import components for the tabbed interface
   import RiskAnalytics from './RiskAnalytics.svelte';
@@ -223,19 +224,24 @@
     try {
       calculateRecommendedSize();
       
-      // Create a new assessment with the correct properties but different ID for each day
-      const assessmentData = {
+      // Import the RiskAssessment model
+      const { models } = await import('../../../wailsjs/go/models');
+      
+      // Create a new assessment using the model's createFrom method
+      const assessmentData = models.RiskAssessment.createFrom({
         id: isEditingSameDay() ? assessment.id : '',
         date: new Date(assessment.date),
         emotionalScore: assessment.emotionalScore,
         fomoScore: assessment.fomoScore,
         biasScore: assessment.biasScore,
-        physicalScore: assessment.physicalScore,
-        plImpactScore: assessment.plImpactScore,
-        otherScore: assessment.otherScore,
+        // These fields exist in our UI but not in the Go model
+        // We'll keep them in our local state but not send them to Go
+        // physicalScore: assessment.physicalScore,
+        // plImpactScore: assessment.plImpactScore,
+        // otherScore: assessment.otherScore,
         overallScore: assessment.overallScore,
         notes: assessment.notes
-      };
+      });
       
       // Use the proper API method to save the assessment
       await SaveRiskAssessment(assessmentData);
@@ -316,6 +322,53 @@
     <div class="divider"></div>
     
     <p class="description">Assess your daily emotional and psychological state to determine optimal position sizing.</p>
+    
+    <div class="recommendation">
+      <h2>Recommended Position Size</h2>
+      <div class="position-bar">
+        <div 
+          class="position-indicator" 
+          style="width: {positionSize}%; background-color: {positionSize >= 70 ? '#68D391' : positionSize <= 30 ? '#FC8181' : '#F6AD55'}"
+        ></div>
+      </div>
+      <div class="position-value">{positionSize}% of max position size is recommended</div>
+      <div class="position-value-dollars">
+        Position sizes of ${Math.round((positionSize/100) * $maxDollarRiskPerTrade).toFixed(2)} out of ${$maxDollarRiskPerTrade.toFixed(2)} are recommended for today
+      </div>
+      
+      {#if showEuphoriaFlag}
+        <div class="warning-flag euphoria-flag">
+          <span class="flag-icon">⚠️</span>
+          <span class="flag-text">Caution: Potential Euphoria Detected</span>
+          <p class="flag-desc">High positive emotional state or recent profits may lead to overconfidence. Consider scaling back position sizes and being extra cautious with entries.</p>
+        </div>
+      {/if}
+      
+      {#if showChasingFlag}
+        <div class="warning-flag chasing-flag">
+          <span class="flag-icon">⚠️</span>
+          <span class="flag-text">Warning: Potential Chasing Risk</span>
+          <p class="flag-desc">Recent significant losses may lead to revenge trading or "chasing" lost money. Consider taking a break or trading minimal size with extreme caution.</p>
+        </div>
+      {/if}
+      
+      {#if showFOMOFlag}
+        <div class="warning-flag fomo-flag">
+          <span class="flag-icon">⚠️</span>
+          <span class="flag-text">Warning: High FOMO Detected</span>
+          <p class="flag-desc">Significant fear of missing out can lead to taking unreasonable risks and impulsive decisions. Step back, reassess, and only enter high-probability setups.</p>
+        </div>
+      {/if}
+      
+      <div class="position-advice">
+        <h3>{positionAdvice.title}</h3>
+        <ul>
+          {#each positionAdvice.tips as tip}
+            <li>{tip}</li>
+          {/each}
+        </ul>
+      </div>
+    </div>
     
     <div class="assessment-form">
       <div class="date-nav">
@@ -452,50 +505,6 @@
       
       <div class="button-row">
         <button class="save-btn" on:click={saveAssessment}>Save Assessment</button>
-      </div>
-    </div>
-    
-    <div class="recommendation">
-      <h2>Recommended Position Size</h2>
-      <div class="position-bar">
-        <div 
-          class="position-indicator" 
-          style="width: {positionSize}%; background-color: {positionSize >= 70 ? '#68D391' : positionSize <= 30 ? '#FC8181' : '#F6AD55'}"
-        ></div>
-      </div>
-      <div class="position-value">{positionSize}%</div>
-      
-      {#if showEuphoriaFlag}
-        <div class="warning-flag euphoria-flag">
-          <span class="flag-icon">⚠️</span>
-          <span class="flag-text">Caution: Potential Euphoria Detected</span>
-          <p class="flag-desc">High positive emotional state or recent profits may lead to overconfidence. Consider scaling back position sizes and being extra cautious with entries.</p>
-        </div>
-      {/if}
-      
-      {#if showChasingFlag}
-        <div class="warning-flag chasing-flag">
-          <span class="flag-icon">⚠️</span>
-          <span class="flag-text">Warning: Potential Chasing Risk</span>
-          <p class="flag-desc">Recent significant losses may lead to revenge trading or "chasing" lost money. Consider taking a break or trading minimal size with extreme caution.</p>
-        </div>
-      {/if}
-      
-      {#if showFOMOFlag}
-        <div class="warning-flag fomo-flag">
-          <span class="flag-icon">⚠️</span>
-          <span class="flag-text">Warning: High FOMO Detected</span>
-          <p class="flag-desc">Significant fear of missing out can lead to taking unreasonable risks and impulsive decisions. Step back, reassess, and only enter high-probability setups.</p>
-        </div>
-      {/if}
-      
-      <div class="position-advice">
-        <h3>{positionAdvice.title}</h3>
-        <ul>
-          {#each positionAdvice.tips as tip}
-            <li>{tip}</li>
-          {/each}
-        </ul>
       </div>
     </div>
     
@@ -813,6 +822,14 @@
     font-size: 1.5rem;
     font-weight: bold;
     margin-bottom: 1rem;
+  }
+  
+  .position-value-dollars {
+    text-align: center;
+    font-size: 1.1rem;
+    color: inherit;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
   }
   
   .warning-flag {
