@@ -5,6 +5,7 @@
   import TradingKoans from './components/koans/TradingKoans.svelte';
   import { WindowSetDarkTheme, WindowSetLightTheme } from '../wailsjs/runtime/runtime';
   import { VERSION } from './version.js';
+  import { RunDatabaseMaintenance } from '../wailsjs/go/main/App';
   
   let activeView = 'stock'; // Default to 'stock' view to match screenshots
   let isDarkMode = true; // Default to dark mode to match screenshots
@@ -80,6 +81,16 @@ Warning: This will overwrite any existing data in the application. Make a backup
     alert(message);
   }
   
+  // Database maintenance function
+  async function runDatabaseMaintenance() {
+    try {
+      const result = await RunDatabaseMaintenance();
+      alert(result);
+    } catch (error) {
+      alert(`Error: ${error}`);
+    }
+  }
+  
   // Function to refresh the entire application
   function refreshApp() {
     console.log('Global refresh triggered');
@@ -151,6 +162,9 @@ Warning: This will overwrite any existing data in the application. Make a backup
         </button>
         <button class="data-btn" on:click={importData} title="Import your data">
           📥 Import Data
+        </button>
+        <button class="data-btn" on:click={runDatabaseMaintenance} title="Clean up database and free space">
+          🧹 Database Cleanup
         </button>
         <a href="https://docs.google.com/forms/d/e/1FAIpQLSdy5CEPbAFFli589aR1DPEVUJli5MxRNYsl8PmS4E-srgt7IA/viewform" target="_blank" class="feedback-btn" title="Provide Feedback">
           📝 Feedback

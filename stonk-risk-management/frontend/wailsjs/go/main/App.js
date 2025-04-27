@@ -34,6 +34,10 @@ export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
 
+export function RunDatabaseMaintenance() {
+  return window['go']['main']['App']['RunDatabaseMaintenance']();
+}
+
 export function SaveRiskAssessment(arg1) {
   return window['go']['main']['App']['SaveRiskAssessment'](arg1);
 }

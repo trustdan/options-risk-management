@@ -9,7 +9,7 @@
   let accountRiskPerTrade = 2;
   let maxPortfolioExposure = 20;
   let stopLossPercent = 50;
-  let riskRewardRatio = 2;
+  let riskRewardRatio = 1;
   
   // Drawdown circuit breakers
   let dailyLossLimit = 3;
@@ -125,22 +125,21 @@
     
     <div class="mb-4">
       <div class="flex justify-between">
-        <label class="block text-sm font-medium text-gray-700">Target Risk:Reward Ratio: 1:{riskRewardRatio}</label>
+        <label class="block text-sm font-medium text-gray-700">Target Risk:Reward Ratio: 1:{riskRewardRatio.toFixed(1)}</label>
         <!-- Displaying R:R comparison below -->
       </div>
-      <!-- Min 1:1 R:R -->
-      <!-- Max 1:5 R:R -->
+      <!-- Update min/max to reflect the new range -->
       <div class="flex items-center space-x-2 mt-1">
-        <span class="text-xs text-gray-500 w-8 text-right">1:1</span>
+        <span class="text-xs text-gray-500 w-8 text-right">1:0.1</span>
         <input
           type="range"
-          min="1"
-          max="5"
-          step="0.25"
+          min="0.1"
+          max="10"
+          step="0.1"
           bind:value={riskRewardRatio}
           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer flex-grow"
         />
-        <span class="text-xs text-gray-500 w-8">1:5</span>
+        <span class="text-xs text-gray-500 w-8">1:10</span>
       </div>
       <!-- Dollar R:R display -->
       <div class="mt-2 p-2 bg-gray-50 rounded text-center">

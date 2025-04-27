@@ -10,6 +10,8 @@ import (
 
 	"stonk-risk-management/pkg/database"
 	"stonk-risk-management/pkg/models"
+
+	"github.com/dgraph-io/badger/v3"
 )
 
 // App struct
@@ -109,6 +111,24 @@ func (a *App) SaveTrade(trade *models.Trade) error {
 // DeleteTrade deletes all legs associated with a trade ID
 func (a *App) DeleteTrade(id string) error {
 	return a.tradeRepository.Delete(id)
+}
+
+// RunDatabaseMaintenance performs database maintenance tasks including garbage collection
+// Returns a success message or error message
+func (a *App) RunDatabaseMaintenance() string {
+	if a.db == nil {
+		return "Error: Database not initialized"
+	}
+
+	err := a.db.RunGC()
+	if err != nil {
+		if err == badger.ErrNoRewrite {
+			return "No garbage collection needed at this time. Database is already optimized."
+		}
+		return fmt.Sprintf("Error during garbage collection: %v", err)
+	}
+
+	return "Database maintenance completed successfully. Freed up unused space."
 }
 
 // Greet returns a greeting for the given name

@@ -19,6 +19,8 @@ export function GetTrades():Promise<Array<models.Trade>>;
 
 export function Greet(arg1:string):Promise<string>;
 
+export function RunDatabaseMaintenance():Promise<string>;
+
 export function SaveRiskAssessment(arg1:models.RiskAssessment):Promise<void>;
 
 export function SaveStockRating(arg1:models.StockRating):Promise<void>;
