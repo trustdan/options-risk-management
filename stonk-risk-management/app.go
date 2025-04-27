@@ -98,13 +98,16 @@ func (a *App) GetTrades() ([]*models.Trade, error) {
 	return a.tradeRepository.GetAll()
 }
 
-// SaveTrade saves a single trade leg
-// Note: Frontend is responsible for creating/updating all necessary legs for multi-leg trades.
+// SaveTrade saves a trade
 func (a *App) SaveTrade(trade *models.Trade) error {
 	// Basic validation before saving
 	if trade.Symbol == "" || trade.Sector == "" || trade.Strategy == "" || trade.Type == "" {
 		return fmt.Errorf("invalid trade data: missing required fields")
 	}
+
+	// For backward compatibility, always set legNumber to 1
+	trade.LegNumber = 1
+
 	return a.tradeRepository.Save(trade)
 }
 

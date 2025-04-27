@@ -147,46 +147,20 @@
   let tradesLoaded = false; // Track if trades have been initially loaded
   let componentKey = 0; // Used to force full component re-rendering
   
-  // Data for the new trade form
-  let newTrade = {
-    id: '', // Will be set when editing or generated on save
-    entryDate: new Date().toISOString().split('T')[0],
-    expirationDate: '',
-    ticker: '',
-    sector: '',
-    entryPrice: 0,
-    strategy: '',
-    notes: ''
-  };
-  
-  // For multi-leg strategies that span multiple weeks
-  let additionalExpirations = [];
-  let showAdditionalExpiration = false;
-  let selectedStrategyCategory = '';
-  let selectedStrategyDescription = '';
-  
-  // For editing trades
-  let isEditing = false;
-  let editingTradeId = null;
-  
-  // For search/filter
-  let searchQuery = '';
-  let searchType = 'ticker';
-  
-  // Track whether we're entering a multi-week strategy
+  // Track whether we're entering a calendar or diagonal strategy
   $: {
     const strategyParts = newTrade.strategy.split(' - ');
     if (strategyParts.length >= 2) {
       const category = strategyParts[0];
       const type = strategyParts[1];
       
-      showAdditionalExpiration = 
+      showShortLegField = 
         category.includes('Calendar') || 
         category.includes('Diagonal') ||
         type.includes('Calendar') ||
         type.includes('Diagonal');
     } else {
-      showAdditionalExpiration = false;
+      showShortLegField = false;
     }
   }
   
@@ -211,6 +185,32 @@
       selectedStrategyDescription = '';
     }
   }
+  
+  // Data for the new trade form
+  let newTrade = {
+    id: '', // Will be set when editing or generated on save
+    entryDate: new Date().toISOString().split('T')[0],
+    expirationDate: '',
+    ticker: '',
+    sector: '',
+    entryPrice: 0,
+    strategy: '',
+    notes: '',
+    shortLegExpiration: '' // New field for short leg expiration info
+  };
+  
+  // For calendar and diagonal spreads
+  let showShortLegField = false;
+  let selectedStrategyCategory = '';
+  let selectedStrategyDescription = '';
+  
+  // For editing trades
+  let isEditing = false;
+  let editingTradeId = null;
+  
+  // For search/filter
+  let searchQuery = '';
+  let searchType = 'ticker';
   
   // Filtered trades for history display
   $: filteredTrades = trades
@@ -528,65 +528,34 @@
       try {
         await DeleteTrade(editingTradeId);
       } catch (error) {
-        console.error('Failed to delete old trade legs during edit:', error);
+        console.error('Failed to delete old trade during edit:', error);
         alert('Error updating trade. Could not remove old data.');
         return;
       }
     }
     
-    // Base trade data (plain JS object first)
-    const baseTradeData = {
+    // Create a single trade object with all the data
+    const tradeData = {
       id: tradeId,
       symbol: newTrade.ticker,
       sector: newTrade.sector,
       strategy: strategyCategory,
       type: strategyType,
+      week: weekIndex + 1,
       entryPrice: parseFloat(newTrade.entryPrice.toString()),
       notes: newTrade.notes,
-      entryDate: entryDate, 
-      // week and expirationDate added per leg
+      entryDate: entryDate,
+      expirationDate: expDate,
+      isMultiLeg: showShortLegField,
+      legNumber: 1,
+      shortLegExp: newTrade.shortLegExpiration || ''
     };
 
-    let tradesToSaveData = [];
-
-    // Primary Leg
-    tradesToSaveData.push({
-      ...baseTradeData,
-      week: weekIndex + 1,
-      expirationDate: expDate,
-    });
-
-    // Additional Legs
-    if (showAdditionalExpiration && additionalExpirations.length > 0) {
-      for (const additionalExpStr of additionalExpirations) {
-        if (!additionalExpStr) continue;
-        const addExpDate = new Date(additionalExpStr);
-        const addWeekIndex = weeks.findIndex(w => {
-          const weekStart = new Date(w.startDate);
-          const weekEnd = new Date(w.expirationDate);
-          weekEnd.setDate(weekEnd.getDate() + 1);
-          return addExpDate >= weekStart && addExpDate < weekEnd;
-        });
-
-        if (addWeekIndex !== -1) {
-          tradesToSaveData.push({
-            ...baseTradeData,
-            week: addWeekIndex + 1,
-            expirationDate: addExpDate,
-          });
-        } else {
-          alert(`Additional expiration date ${formatDate(addExpDate)} is outside the displayed weeks and was ignored.`);
-        }
-      }
-    }
-
-    // Save all trade legs to backend
+    // Save to backend
     try {
-      for (const legData of tradesToSaveData) {
-        const tradeModel = new models.Trade();
-        Object.assign(tradeModel, legData);
-        await SaveTrade(tradeModel);
-      } 
+      const tradeModel = new models.Trade();
+      Object.assign(tradeModel, tradeData);
+      await SaveTrade(tradeModel);
       
       console.log('Save complete, forcing full refresh...');
       resetForm();
@@ -595,9 +564,8 @@
       await forceRefresh();
       
       alert(`Trade ${isEditing ? 'updated' : 'added'} successfully!`);
-
     } catch (error) {
-      console.error('Failed to save trade(s):', error);
+      console.error('Failed to save trade:', error);
       alert(`Error saving trade: ${error.message || error}`);
       if (isEditing) {
          console.log('Error during edit, reloading trades...');
@@ -615,10 +583,10 @@
       sector: '',
       entryPrice: 0,
       strategy: '',
-      notes: ''
+      notes: '',
+      shortLegExpiration: ''
     };
-    additionalExpirations = [];
-    showAdditionalExpiration = false;
+    showShortLegField = false;
     selectedStrategyCategory = '';
     selectedStrategyDescription = '';
     isEditing = false;
@@ -626,57 +594,47 @@
   }
   
   function editTrade(tradeId) {
-    const representativeLeg = trades.find(t => t.id === tradeId);
-    if (!representativeLeg) return;
-    const allLegs = trades.filter(t => t.id === tradeId);
+    const trade = trades.find(t => t.id === tradeId);
+    if (!trade) return;
     
     // Ensure dates are proper JS Date objects for formatting
-    let repEntryDate = null;
-    let repExpDate = null;
+    let entryDate = null;
+    let expDate = null;
     
     // Handle potential date format issues safely
-    if (representativeLeg.entryDate) {
+    if (trade.entryDate) {
       try {
-        repEntryDate = new Date(representativeLeg.entryDate);
+        entryDate = new Date(trade.entryDate);
       } catch (e) {
-        console.error("Failed to parse entry date:", representativeLeg.entryDate);
+        console.error("Failed to parse entry date:", trade.entryDate);
       }
     }
     
-    if (representativeLeg.expirationDate) {
+    if (trade.expirationDate) {
       try {
-        repExpDate = new Date(representativeLeg.expirationDate);
+        expDate = new Date(trade.expirationDate);
       } catch (e) {
-        console.error("Failed to parse expiration date:", representativeLeg.expirationDate);
+        console.error("Failed to parse expiration date:", trade.expirationDate);
       }
     }
 
     newTrade = {
-      id: representativeLeg.id,
-      entryDate: repEntryDate ? repEntryDate.toISOString().split('T')[0] : '',
-      expirationDate: repExpDate ? repExpDate.toISOString().split('T')[0] : '',
-      ticker: representativeLeg.symbol,
-      sector: representativeLeg.sector,
-      entryPrice: representativeLeg.entryPrice,
-      strategy: `${representativeLeg.strategy} - ${representativeLeg.type}`,
-      notes: representativeLeg.notes
+      id: trade.id,
+      entryDate: entryDate ? entryDate.toISOString().split('T')[0] : '',
+      expirationDate: expDate ? expDate.toISOString().split('T')[0] : '',
+      ticker: trade.symbol,
+      sector: trade.sector,
+      entryPrice: trade.entryPrice,
+      strategy: `${trade.strategy} - ${trade.type}`,
+      notes: trade.notes,
+      shortLegExpiration: trade.shortLegExp || ''
     };
     
-    // Filter and map additional expirations safely
-    additionalExpirations = allLegs
-      .map(leg => {
-        if (!leg.expirationDate) return null;
-        try {
-          const date = new Date(leg.expirationDate);
-          return date.toISOString().split('T')[0];
-        } catch (e) {
-          console.error("Failed to parse leg expiration date:", leg.expirationDate);
-          return null;
-        }
-      })
-      .filter(date => date && date !== newTrade.expirationDate)
-      .filter((value, index, self) => self.indexOf(value) === index);
-      
+    // Check if this is a calendar or diagonal spread
+    showShortLegField = trade.isMultiLeg || 
+                        trade.strategy.includes('Calendar') || 
+                        trade.strategy.includes('Diagonal');
+    
     isEditing = true;
     editingTradeId = tradeId;
     
@@ -698,19 +656,6 @@
   
   function handleTradeCardClick(trade) {
     editTrade(trade.id);
-  }
-  
-  function addExpirationField() {
-    additionalExpirations = [...additionalExpirations, ''];
-  }
-  
-  function removeExpirationField(index) {
-    additionalExpirations = additionalExpirations.filter((_, i) => i !== index);
-  }
-  
-  function updateAdditionalExpiration(index, value) {
-    additionalExpirations[index] = value;
-    additionalExpirations = [...additionalExpirations];
   }
   
   function formatDate(date) {
@@ -970,29 +915,12 @@
             </div>
           </div>
           
-          {#if showAdditionalExpiration}
-            <div class="additional-expirations">
-              <div class="additional-header">
-                <h4>Additional Expiration Dates</h4>
-                <button type="button" class="add-btn" on:click={addExpirationField}>Add Date</button>
+          {#if showShortLegField}
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label>Short Leg Expiration Date:</label>
+                <input type="date" bind:value={newTrade.shortLegExpiration} />
               </div>
-              
-              {#each additionalExpirations as expiration, i}
-                <div class="additional-exp-row">
-                  <input 
-                    type="date" 
-                    value={expiration} 
-                    on:change={(e) => updateAdditionalExpiration(i, e.currentTarget.value)}
-                  />
-                  <button type="button" class="remove-btn" on:click={() => removeExpirationField(i)}>
-                    ✕
-                  </button>
-                </div>
-              {/each}
-              
-              {#if additionalExpirations.length === 0}
-                <p class="additional-note">For multi-leg strategies spanning different expiration dates</p>
-              {/if}
             </div>
           {/if}
           
@@ -1442,56 +1370,6 @@
     background-color: var(--bg-color);
     border-radius: 3px;
     font-size: 0.75rem;
-  }
-  
-  .additional-expirations {
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background-color: var(--bg-color);
-    border-radius: 4px;
-  }
-  
-  .additional-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-  }
-  
-  .additional-header h4 {
-    margin: 0;
-  }
-  
-  .additional-exp-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .additional-exp-row input {
-    flex: 1;
-  }
-  
-  .remove-btn {
-    background: #e53e3e;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .additional-note {
-    color: #cbd5e0;
-    font-size: 0.9rem;
-    font-style: italic;
-    margin: 0.5rem 0 0;
   }
   
   .form-buttons {

@@ -101,6 +101,9 @@ export namespace models {
 	    expirationDate: time.Time;
 	    entryPrice: number;
 	    notes: string;
+	    legNumber: number;
+	    isMultiLeg: boolean;
+	    shortLegExp: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Trade(source);
@@ -118,6 +121,9 @@ export namespace models {
 	        this.expirationDate = this.convertValues(source["expirationDate"], time.Time);
 	        this.entryPrice = source["entryPrice"];
 	        this.notes = source["notes"];
+	        this.legNumber = source["legNumber"];
+	        this.isMultiLeg = source["isMultiLeg"];
+	        this.shortLegExp = source["shortLegExp"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -16,4 +16,7 @@ type Trade struct {
 	ExpirationDate time.Time `json:"expirationDate"` // Date the option expires
 	EntryPrice     float64   `json:"entryPrice"`     // Price paid/received for the trade
 	Notes          string    `json:"notes"`          // Optional notes
+	LegNumber      int       `json:"legNumber"`      // Leg number for multi-leg strategies (1 for primary leg)
+	IsMultiLeg     bool      `json:"isMultiLeg"`     // Flag indicating if this is part of a multi-leg strategy
+	ShortLegExp    string    `json:"shortLegExp"`    // Text info about short leg expiration for calendar/diagonal spreads
 }
