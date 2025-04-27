@@ -815,7 +815,7 @@
       class:active={activeTab === 'calendar'} 
       on:click={() => activeTab = 'calendar'}
     >
-      Options Calendar
+      Trades + Options Calendar
     </button>
     <button 
       class:active={activeTab === 'journal'} 
@@ -833,7 +833,7 @@
 
   {#if activeTab === 'calendar'}
     <div class="calendar-section">
-      <h2>Options Trading Calendar</h2>
+      <h2>Trades + Options Calendar</h2>
       <div class="divider"></div>
       
       <p class="description">Track and visualize your options trades across sectors and expiration weeks.</p>

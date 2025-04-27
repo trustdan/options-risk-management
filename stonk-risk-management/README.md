@@ -1,4 +1,4 @@
-# Stonk Risk Management
+# Options Risk Management
 
 A comprehensive desktop application for options traders to manage risk, track stock sentiments, and visualize upcoming trades.
 
@@ -41,7 +41,7 @@ A comprehensive desktop application for options traders to manage risk, track st
 ## Installation
 
 ### Windows
-1. Download the latest installer (`stonk-risk-management-setup-x.x.x.exe`) from the releases page
+1. Download the latest installer (`options-risk-management-setup-x.x.x.exe`) from the releases page
 2. Run the installer and follow the on-screen instructions
 3. Launch the application from the Start menu or desktop shortcut
 
@@ -64,7 +64,7 @@ wails build
 3. Plan and visualize your trades with the Options Trading Calendar
 
 ### Data Storage
-All your data is stored locally in `~/.stonk-risk-management` directory.
+All your data is stored locally in `~/.options-risk-management` directory.
 
 ### Supported Options Strategies
 The application supports a comprehensive range of options trading strategies, including:

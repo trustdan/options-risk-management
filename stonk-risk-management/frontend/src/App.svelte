@@ -59,13 +59,13 @@
         class:active={activeView === 'stock'} 
         on:click={() => switchView('stock')}
       >
-        Stock Rating
+        Market, Sector, Stock Rating
       </button>
       <button 
         class:active={activeView === 'trade'} 
         on:click={() => switchView('trade')}
       >
-        Trade Calendar
+        Trades + Options Calendar
       </button>
     </nav>
   </header>
@@ -81,7 +81,7 @@
   </div>
   
   <footer>
-    <p>© {new Date().getFullYear()} Stonk Risk Management (SRM) - v1.0.0</p>
+    <p>© {new Date().getFullYear()} Options Risk Management (ORM) - v1.0.0</p>
   </footer>
 </main>
 

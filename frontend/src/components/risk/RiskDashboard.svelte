@@ -2,11 +2,13 @@
   import { onMount } from 'svelte';
   import RiskForm from './RiskForm.svelte';
   import RiskAnalytics from './RiskAnalytics.svelte';
+  import RiskManagementControls from './RiskManagementControls.svelte';
+  import RiskJournal from './RiskJournal.svelte';
   
   let assessments = [];
   let index = 0;
   let current = {};
-  let activeTab = 'form'; // 'form' or 'analytics'
+  let activeTab = 'assessment'; // 'assessment', 'analytics', 'controls', or 'journal'
   
   onMount(async () => {
     try {
@@ -93,10 +95,10 @@
 <div class="dashboard">
   <div class="tabs">
     <button 
-      class:active={activeTab === 'form'} 
-      on:click={() => activeTab = 'form'}
+      class:active={activeTab === 'assessment'} 
+      on:click={() => activeTab = 'assessment'}
     >
-      Risk Assessment
+      Daily Assessment
     </button>
     <button 
       class:active={activeTab === 'analytics'} 
@@ -104,9 +106,21 @@
     >
       Analytics
     </button>
+    <button 
+      class:active={activeTab === 'controls'} 
+      on:click={() => activeTab = 'controls'}
+    >
+      Position Sizing
+    </button>
+    <button 
+      class:active={activeTab === 'journal'} 
+      on:click={() => activeTab = 'journal'}
+    >
+      Trading Journal
+    </button>
   </div>
   
-  {#if activeTab === 'form'}
+  {#if activeTab === 'assessment'}
     <div class="nav-arrows">
       <button 
         on:click={prev} 
@@ -133,6 +147,10 @@
     />
   {:else if activeTab === 'analytics'}
     <RiskAnalytics {assessments} />
+  {:else if activeTab === 'controls'}
+    <RiskManagementControls />
+  {:else if activeTab === 'journal'}
+    <RiskJournal />
   {/if}
 </div>
 
@@ -146,6 +164,7 @@
     display: flex;
     margin-bottom: 1rem;
     border-bottom: 1px solid #ddd;
+    flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
   }
   
   .tabs button {
@@ -156,6 +175,7 @@
     font-size: 1rem;
     border-bottom: 3px solid transparent;
     transition: all 0.2s;
+    white-space: nowrap; /* Prevent text wrapping within buttons */
   }
   
   .tabs button.active {
@@ -206,5 +226,18 @@
   
   :global(.toast.show) {
     opacity: 1;
+  }
+  
+  /* Responsive adjustments for mobile */
+  @media (max-width: 768px) {
+    .tabs {
+      justify-content: flex-start;
+      overflow-x: auto;
+    }
+    
+    .tabs button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+    }
   }
 </style> 

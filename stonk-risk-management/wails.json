@@ -1,13 +1,14 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "Stonk Risk Management",
+  "name": "stonk-risk-management",
   "outputfilename": "stonk-risk-management",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
-  "frontend:dev:serverUrl": "auto",
+  "frontend:dev:serverUrl": "http://localhost:5173",
   "author": {
-    "name": "trustdan",
-    "email": "danieltuckerrust@gmail.com"
-  }
+    "name": "Dan",
+    "email": "dan@example.com"
+  },
+  "debounceMS": 3000
 }

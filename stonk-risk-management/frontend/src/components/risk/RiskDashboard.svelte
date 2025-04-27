@@ -222,16 +222,64 @@
   async function saveAssessment() {
     try {
       calculateRecommendedSize();
-      const assessmentToSave = {
-        ...assessment,
-        date: new Date(assessment.date)
+      
+      // Create a new assessment with the correct properties but different ID for each day
+      const assessmentData = {
+        id: isEditingSameDay() ? assessment.id : '',
+        date: new Date(assessment.date),
+        emotionalScore: assessment.emotionalScore,
+        fomoScore: assessment.fomoScore,
+        biasScore: assessment.biasScore,
+        physicalScore: assessment.physicalScore,
+        plImpactScore: assessment.plImpactScore,
+        otherScore: assessment.otherScore,
+        overallScore: assessment.overallScore,
+        notes: assessment.notes
       };
-      await SaveRiskAssessment(assessmentToSave);
+      
+      // Use the proper API method to save the assessment
+      await SaveRiskAssessment(assessmentData);
+      
+      // Reload all assessments to get the updated list
+      assessments = await GetRiskAssessments();
+      
+      // Find where our new assessment is in the list
+      if (assessmentData.id) {
+        // If updating, find by ID
+        const idx = assessments.findIndex(a => a.id === assessmentData.id);
+        if (idx >= 0) {
+          currentIndex = idx;
+        } else {
+          currentIndex = assessments.length - 1; // Fallback to the most recent
+        }
+      } else {
+        // New assessment will be the most recent
+        currentIndex = assessments.length - 1;
+      }
+      
+      // Load the assessment data
+      loadAssessmentAt(currentIndex);
+      
       alert('Assessment saved successfully');
     } catch (error) {
       console.error('Failed to save assessment:', error);
       alert('Failed to save assessment: ' + error.message);
     }
+  }
+  
+  // Helper function to determine if we're editing the same day
+  function isEditingSameDay() {
+    if (!assessment.id) return false;
+    
+    // Find the current assessment in the list
+    const existingAssessment = assessments.find(a => a.id === assessment.id);
+    if (!existingAssessment) return false;
+    
+    // Check if the date is the same
+    const existingDate = new Date(existingAssessment.date).toISOString().split('T')[0];
+    const currentDate = assessment.date;
+    
+    return existingDate === currentDate;
   }
   
   function handleSliderChange() {
@@ -478,7 +526,16 @@
     </div>
   <!-- Analytics Tab Content -->
   {:else if activeTab === 'analytics'}
-    <RiskAnalytics {assessments} />
+    <RiskAnalytics 
+      {assessments} 
+      on:refresh-assessments={async () => {
+        try {
+          assessments = await GetRiskAssessments();
+        } catch (error) {
+          console.error('Failed to refresh risk assessments:', error);
+        }
+      }}
+    />
   <!-- Position Sizing Controls Tab Content -->
   {:else if activeTab === 'controls'}
     <RiskManagementControls />
