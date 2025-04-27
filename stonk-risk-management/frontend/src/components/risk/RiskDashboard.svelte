@@ -2,6 +2,13 @@
   import { onMount } from 'svelte';
   import { GetRiskAssessments, SaveRiskAssessment } from '../../../wailsjs/go/main/App';
   
+  // Import components for the tabbed interface
+  import RiskAnalytics from './RiskAnalytics.svelte';
+  import RiskManagementControls from './RiskManagementControls.svelte';
+  
+  // Active tab state
+  let activeTab = 'assessment'; // 'assessment', 'analytics', or 'controls'
+  
   let assessment = {
     id: '',
     date: new Date().toISOString().split('T')[0],
@@ -233,218 +240,249 @@
 </script>
 
 <div class="dashboard">
-  <h2>Risk Management Dashboard</h2>
-  <div class="divider"></div>
-  
-  <p class="description">Assess your daily emotional and psychological state to determine optimal position sizing.</p>
-  
-  <div class="assessment-form">
-    <div class="date-nav">
-      <button 
-        class="nav-btn" 
-        on:click={navigatePrevious} 
-        disabled={isFirstAssessment() || assessments.length === 0}
-      >
-        &larr; Yesterday
-      </button>
-      
-      <div class="date-picker">
-        <label>Assessment Date:</label>
-        <input type="date" bind:value={assessment.date} />
-      </div>
-      
-      <button 
-        class="nav-btn" 
-        on:click={navigateNext} 
-        disabled={isLastAssessment() || assessments.length === 0}
-      >
-        Tomorrow &rarr;
-      </button>
-    </div>
-    
-    <div class="slider-group">
-      <h3>Emotional State: {assessment.emotionalScore}</h3>
-      <input 
-        type="range" 
-        min="-3" 
-        max="3" 
-        step="1" 
-        bind:value={assessment.emotionalScore} 
-        on:change={handleSliderChange}
-      />
-      <div class="scale-labels">
-        <span>Negative (-3)</span>
-        <span>Neutral (0)</span>
-        <span>Positive (+3)</span>
-      </div>
-      <p class="slider-desc">How are you feeling emotionally today? Negative values indicate stress, anxiety, or emotional disturbance.</p>
-    </div>
-    
-    <div class="slider-group">
-      <h3>FOMO Level: {assessment.fomoScore}</h3>
-      <input 
-        type="range" 
-        min="-3" 
-        max="3" 
-        step="1" 
-        bind:value={assessment.fomoScore} 
-        on:change={handleSliderChange}
-      />
-      <div class="scale-labels">
-        <span>Low (-3)</span>
-        <span>Medium (0)</span>
-        <span>High (+3)</span>
-      </div>
-      <p class="slider-desc">How strongly are you feeling the "Fear Of Missing Out"? Higher values indicate stronger FOMO which can lead to impulsive decisions.</p>
-    </div>
-    
-    <div class="slider-group">
-      <h3>Market Bias: {assessment.biasScore}</h3>
-      <input 
-        type="range" 
-        min="-3" 
-        max="3" 
-        step="1" 
-        bind:value={assessment.biasScore} 
-        on:change={handleSliderChange}
-      />
-      <div class="scale-labels">
-        <span>Bearish (-3)</span>
-        <span>Neutral (0)</span>
-        <span>Bullish (+3)</span>
-      </div>
-      <p class="slider-desc">Are you biased toward a bearish or bullish perspective? Strong biases can affect your trading decisions.</p>
-      <p class="bias-caption">One must always be flexible. Go with the flow and check your unreasonable biases at the door.</p>
-    </div>
-    
-    <div class="slider-group">
-      <h3>Physical Condition: {assessment.physicalScore}</h3>
-      <input 
-        type="range" 
-        min="-3" 
-        max="3" 
-        step="1" 
-        bind:value={assessment.physicalScore} 
-        on:change={handleSliderChange}
-      />
-      <div class="scale-labels">
-        <span>Poor (-3)</span>
-        <span>Average (0)</span>
-        <span>Excellent (+3)</span>
-      </div>
-      <p class="slider-desc">How is your physical well-being today? Fatigue, illness, or poor sleep can impair decision-making.</p>
-    </div>
-    
-    <div class="slider-group">
-      <h3>Recent P&L Impact: {assessment.plImpactScore}</h3>
-      <input 
-        type="range" 
-        min="-3" 
-        max="3" 
-        step="1" 
-        bind:value={assessment.plImpactScore} 
-        on:change={handleSliderChange}
-      />
-      <div class="scale-labels">
-        <span>Losses (-3)</span>
-        <span>Breakeven (0)</span>
-        <span>Profits (+3)</span>
-      </div>
-      <p class="slider-desc">How have your recent trading results affected your mindset? Recent losses can lead to revenge trading.</p>
-    </div>
-    
-    <div class="slider-group">
-      <h3>Other Feelings: {assessment.otherScore}</h3>
-      <input 
-        type="range" 
-        min="-3" 
-        max="3" 
-        step="1" 
-        bind:value={assessment.otherScore} 
-        on:change={handleSliderChange}
-      />
-      <div class="scale-labels">
-        <span>Bad Vibes (-3)</span>
-        <span>Normal (0)</span>
-        <span>Zen/In the Zone (+3)</span>
-      </div>
-      <p class="slider-desc">How is your general trading mindset today? Are you feeling "in the zone" or experiencing bad vibes?</p>
-    </div>
-    
-    <div class="button-row">
-      <button class="save-btn" on:click={saveAssessment}>Save Assessment</button>
-    </div>
+  <!-- Tab navigation -->
+  <div class="tab-navigation">
+    <button 
+      class:active={activeTab === 'assessment'} 
+      on:click={() => activeTab = 'assessment'}
+    >
+      Daily Assessment
+    </button>
+    <button 
+      class:active={activeTab === 'analytics'} 
+      on:click={() => activeTab = 'analytics'}
+    >
+      Analytics
+    </button>
+    <button 
+      class:active={activeTab === 'controls'} 
+      on:click={() => activeTab = 'controls'}
+    >
+      Position Sizing
+    </button>
   </div>
-  
-  <div class="recommendation">
-    <h2>Recommended Position Size</h2>
-    <div class="position-bar">
-      <div 
-        class="position-indicator" 
-        style="width: {positionSize}%; background-color: {positionSize >= 70 ? '#68D391' : positionSize <= 30 ? '#FC8181' : '#F6AD55'}"
-      ></div>
-    </div>
-    <div class="position-value">{positionSize}%</div>
+
+  <!-- Daily Assessment Tab Content -->
+  {#if activeTab === 'assessment'}
+    <h2>Risk Management Dashboard</h2>
+    <div class="divider"></div>
     
-    {#if showEuphoriaFlag}
-      <div class="warning-flag euphoria-flag">
-        <span class="flag-icon">⚠️</span>
-        <span class="flag-text">Caution: Potential Euphoria Detected</span>
-        <p class="flag-desc">High positive emotional state or recent profits may lead to overconfidence. Consider scaling back position sizes and being extra cautious with entries.</p>
-      </div>
-    {/if}
+    <p class="description">Assess your daily emotional and psychological state to determine optimal position sizing.</p>
     
-    {#if showChasingFlag}
-      <div class="warning-flag chasing-flag">
-        <span class="flag-icon">⚠️</span>
-        <span class="flag-text">Warning: Potential Chasing Risk</span>
-        <p class="flag-desc">Recent significant losses may lead to revenge trading or "chasing" lost money. Consider taking a break or trading minimal size with extreme caution.</p>
-      </div>
-    {/if}
-    
-    {#if showFOMOFlag}
-      <div class="warning-flag fomo-flag">
-        <span class="flag-icon">⚠️</span>
-        <span class="flag-text">Warning: High FOMO Detected</span>
-        <p class="flag-desc">Significant fear of missing out can lead to taking unreasonable risks and impulsive decisions. Step back, reassess, and only enter high-probability setups.</p>
-      </div>
-    {/if}
-    
-    <div class="position-advice">
-      <h3>{positionAdvice.title}</h3>
-      <ul>
-        {#each positionAdvice.tips as tip}
-          <li>{tip}</li>
-        {/each}
-      </ul>
-    </div>
-  </div>
-  
-  <div class="guidelines">
-    <h2>Daily Trading Psychology Guidelines</h2>
-    
-    <div class="guidelines-grid">
-      <div class="guideline-item">
-        <h3>✓ Start with Self-Assessment</h3>
-        <p>Begin each trading day by honestly evaluating your mental and physical state.</p>
+    <div class="assessment-form">
+      <div class="date-nav">
+        <button 
+          class="nav-btn" 
+          on:click={navigatePrevious} 
+          disabled={isFirstAssessment() || assessments.length === 0}
+        >
+          &larr; Yesterday
+        </button>
+        
+        <div class="date-picker">
+          <label>Assessment Date:</label>
+          <input type="date" bind:value={assessment.date} />
+        </div>
+        
+        <button 
+          class="nav-btn" 
+          on:click={navigateNext} 
+          disabled={isLastAssessment() || assessments.length === 0}
+        >
+          Tomorrow &rarr;
+        </button>
       </div>
       
-      <div class="guideline-item">
-        <h3>✓ Adjust Position Sizing</h3>
-        <p>Use your risk assessment score to modify position sizing - trade smaller on difficult days.</p>
+      <div class="slider-group">
+        <h3>Emotional State: {assessment.emotionalScore}</h3>
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={assessment.emotionalScore} 
+          on:change={handleSliderChange}
+        />
+        <div class="scale-labels">
+          <span>Negative (-3)</span>
+          <span>Neutral (0)</span>
+          <span>Positive (+3)</span>
+        </div>
+        <p class="slider-desc">How are you feeling emotionally today? Negative values indicate stress, anxiety, or emotional disturbance.</p>
       </div>
       
-      <div class="guideline-item">
-        <h3>✓ Recognize Emotional Triggers</h3>
-        <p>Be aware of market events or conditions that might trigger emotional responses.</p>
+      <div class="slider-group">
+        <h3>FOMO Level: {assessment.fomoScore}</h3>
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={assessment.fomoScore} 
+          on:change={handleSliderChange}
+        />
+        <div class="scale-labels">
+          <span>Low (-3)</span>
+          <span>Medium (0)</span>
+          <span>High (+3)</span>
+        </div>
+        <p class="slider-desc">How strongly are you feeling the "Fear Of Missing Out"? Higher values indicate stronger FOMO which can lead to impulsive decisions.</p>
       </div>
       
-      <div class="guideline-item">
-        <h3>✓ Implement Circuit Breakers</h3>
-        <p>Have predefined rules for when to stop trading (e.g., after 2-3 consecutive losses).</p>
+      <div class="slider-group">
+        <h3>Market Bias: {assessment.biasScore}</h3>
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={assessment.biasScore} 
+          on:change={handleSliderChange}
+        />
+        <div class="scale-labels">
+          <span>Bearish (-3)</span>
+          <span>Neutral (0)</span>
+          <span>Bullish (+3)</span>
+        </div>
+        <p class="slider-desc">Are you biased toward a bearish or bullish perspective? Strong biases can affect your trading decisions.</p>
+        <p class="bias-caption">One must always be flexible. Go with the flow and check your unreasonable biases at the door.</p>
+      </div>
+      
+      <div class="slider-group">
+        <h3>Physical Condition: {assessment.physicalScore}</h3>
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={assessment.physicalScore} 
+          on:change={handleSliderChange}
+        />
+        <div class="scale-labels">
+          <span>Poor (-3)</span>
+          <span>Average (0)</span>
+          <span>Excellent (+3)</span>
+        </div>
+        <p class="slider-desc">How is your physical well-being today? Fatigue, illness, or poor sleep can impair decision-making.</p>
+      </div>
+      
+      <div class="slider-group">
+        <h3>Recent P&L Impact: {assessment.plImpactScore}</h3>
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={assessment.plImpactScore} 
+          on:change={handleSliderChange}
+        />
+        <div class="scale-labels">
+          <span>Losses (-3)</span>
+          <span>Breakeven (0)</span>
+          <span>Profits (+3)</span>
+        </div>
+        <p class="slider-desc">How have your recent trading results affected your mindset? Recent losses can lead to revenge trading.</p>
+      </div>
+      
+      <div class="slider-group">
+        <h3>Other Feelings: {assessment.otherScore}</h3>
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={assessment.otherScore} 
+          on:change={handleSliderChange}
+        />
+        <div class="scale-labels">
+          <span>Bad Vibes (-3)</span>
+          <span>Normal (0)</span>
+          <span>Zen/In the Zone (+3)</span>
+        </div>
+        <p class="slider-desc">How is your general trading mindset today? Are you feeling "in the zone" or experiencing bad vibes?</p>
+      </div>
+      
+      <div class="button-row">
+        <button class="save-btn" on:click={saveAssessment}>Save Assessment</button>
       </div>
     </div>
-  </div>
+    
+    <div class="recommendation">
+      <h2>Recommended Position Size</h2>
+      <div class="position-bar">
+        <div 
+          class="position-indicator" 
+          style="width: {positionSize}%; background-color: {positionSize >= 70 ? '#68D391' : positionSize <= 30 ? '#FC8181' : '#F6AD55'}"
+        ></div>
+      </div>
+      <div class="position-value">{positionSize}%</div>
+      
+      {#if showEuphoriaFlag}
+        <div class="warning-flag euphoria-flag">
+          <span class="flag-icon">⚠️</span>
+          <span class="flag-text">Caution: Potential Euphoria Detected</span>
+          <p class="flag-desc">High positive emotional state or recent profits may lead to overconfidence. Consider scaling back position sizes and being extra cautious with entries.</p>
+        </div>
+      {/if}
+      
+      {#if showChasingFlag}
+        <div class="warning-flag chasing-flag">
+          <span class="flag-icon">⚠️</span>
+          <span class="flag-text">Warning: Potential Chasing Risk</span>
+          <p class="flag-desc">Recent significant losses may lead to revenge trading or "chasing" lost money. Consider taking a break or trading minimal size with extreme caution.</p>
+        </div>
+      {/if}
+      
+      {#if showFOMOFlag}
+        <div class="warning-flag fomo-flag">
+          <span class="flag-icon">⚠️</span>
+          <span class="flag-text">Warning: High FOMO Detected</span>
+          <p class="flag-desc">Significant fear of missing out can lead to taking unreasonable risks and impulsive decisions. Step back, reassess, and only enter high-probability setups.</p>
+        </div>
+      {/if}
+      
+      <div class="position-advice">
+        <h3>{positionAdvice.title}</h3>
+        <ul>
+          {#each positionAdvice.tips as tip}
+            <li>{tip}</li>
+          {/each}
+        </ul>
+      </div>
+    </div>
+    
+    <div class="guidelines">
+      <h2>Daily Trading Psychology Guidelines</h2>
+      
+      <div class="guidelines-grid">
+        <div class="guideline-item">
+          <h3>✓ Start with Self-Assessment</h3>
+          <p>Begin each trading day by honestly evaluating your mental and physical state.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Adjust Position Sizing</h3>
+          <p>Use your risk assessment score to modify position sizing - trade smaller on difficult days.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Recognize Emotional Triggers</h3>
+          <p>Be aware of market events or conditions that might trigger emotional responses.</p>
+        </div>
+        
+        <div class="guideline-item">
+          <h3>✓ Implement Circuit Breakers</h3>
+          <p>Have predefined rules for when to stop trading (e.g., after 2-3 consecutive losses).</p>
+        </div>
+      </div>
+    </div>
+  <!-- Analytics Tab Content -->
+  {:else if activeTab === 'analytics'}
+    <RiskAnalytics {assessments} />
+  <!-- Position Sizing Controls Tab Content -->
+  {:else if activeTab === 'controls'}
+    <RiskManagementControls />
+  {/if}
 </div>
 
 <style>
@@ -455,6 +493,38 @@
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Tab Navigation Styles */
+  .tab-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+  }
+  
+  .tab-navigation button {
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    margin-bottom: -1px;
+    white-space: nowrap;
+  }
+  
+  .tab-navigation button.active {
+    font-weight: bold;
+    border-bottom: 3px solid var(--primary-button);
+    color: var(--primary-button);
+  }
+  
+  .tab-navigation button:hover:not(.active) {
+    border-bottom-color: var(--border-color);
   }
   
   h2 {
@@ -483,8 +553,14 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
   
+  .date-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
   .date-picker {
-    margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -497,31 +573,26 @@
   
   .date-picker input {
     padding: 0.5rem;
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--input-border);
+    background-color: var(--input-bg);
+    color: inherit;
     border-radius: 4px;
   }
   
-  .date-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
-  }
-  
   .nav-btn {
-    background-color: var(--bg-color);
-    border: 1px solid var(--border-color);
+    background-color: var(--secondary-button);
     color: inherit;
+    border: none;
     padding: 0.5rem 1rem;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
-    transition: background-color 0.2s, color 0.2s;
+    opacity: 0.9;
+    transition: all 0.2s;
   }
   
   .nav-btn:hover:not(:disabled) {
-    background-color: var(--active-button);
-    color: white;
+    opacity: 1;
   }
   
   .nav-btn:disabled {
@@ -530,44 +601,55 @@
   }
   
   .slider-group {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
   
   .slider-group h3 {
+    margin-top: 0;
     margin-bottom: 0.5rem;
-    color: inherit;
   }
   
-  .slider-group input[type="range"] {
+  .slider-group input[type=range] {
     width: 100%;
     margin: 0.5rem 0;
+    -webkit-appearance: none;
+    background: var(--secondary-button);
+    height: 8px;
+    border-radius: 4px;
+  }
+  
+  .slider-group input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-button);
+    cursor: pointer;
   }
   
   .scale-labels {
     display: flex;
     justify-content: space-between;
-    margin-top: 0.25rem;
-    color: #718096;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    color: inherit;
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
   }
   
   .slider-desc {
-    color: #718096;
-    font-style: italic;
-    margin-top: 0.5rem;
     font-size: 0.9rem;
+    margin-top: 0.5rem;
+    color: inherit;
+    opacity: 0.9;
   }
   
   .bias-caption {
-    color: #4299e1;
     font-style: italic;
+    font-size: 0.8rem;
     margin-top: 0.5rem;
-    font-weight: 500;
-    font-size: 0.9rem;
     text-align: center;
-    padding: 5px;
-    border-radius: 4px;
-    background-color: rgba(66, 153, 225, 0.1);
+    color: inherit;
+    opacity: 0.8;
   }
   
   .button-row {
@@ -577,18 +659,18 @@
   }
   
   .save-btn {
-    background-color: var(--active-button);
+    background-color: var(--primary-button);
     color: white;
-    padding: 0.75rem 2rem;
     border: none;
+    padding: 0.75rem 2rem;
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
   }
   
   .save-btn:hover {
-    background-color: #3182ce;
+    opacity: 0.9;
   }
   
   .recommendation {
@@ -600,47 +682,47 @@
   }
   
   .position-bar {
-    height: 20px;
-    background-color: #edf2f7;
-    border-radius: 10px;
+    width: 100%;
+    height: 30px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
     margin: 1rem 0;
     overflow: hidden;
   }
   
   .position-indicator {
     height: 100%;
-    border-radius: 10px;
-    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 15px;
+    transition: width 0.5s, background-color 0.5s;
   }
   
   .position-value {
     text-align: center;
+    font-size: 1.5rem;
     font-weight: bold;
     margin-bottom: 1rem;
   }
   
   .warning-flag {
+    margin: 1rem 0;
     padding: 1rem;
     border-radius: 5px;
-    margin-bottom: 1rem;
+    font-size: 0.9rem;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
   
   .euphoria-flag {
-    background-color: rgba(237, 137, 54, 0.15);
-    border-left: 4px solid #ed8936;
+    background-color: rgba(255, 193, 7, 0.2);
   }
   
   .chasing-flag {
-    background-color: rgba(229, 62, 62, 0.15);
-    border-left: 4px solid #e53e3e;
+    background-color: rgba(220, 53, 69, 0.2);
   }
   
   .fomo-flag {
-    background-color: rgba(102, 126, 234, 0.15);
-    border-left: 4px solid #667eea;
+    background-color: rgba(111, 66, 193, 0.2);
   }
   
   .flag-icon {
@@ -650,29 +732,30 @@
   
   .flag-text {
     font-weight: bold;
-    font-size: 1.1rem;
     margin-bottom: 0.5rem;
   }
   
   .flag-desc {
     text-align: center;
-    font-size: 0.9rem;
-    color: inherit;
     margin: 0;
   }
   
   .position-advice {
-    border-top: 1px solid #e2e8f0;
-    padding-top: 1rem;
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 5px;
   }
   
   .position-advice h3 {
+    text-align: center;
+    margin-top: 0;
     margin-bottom: 1rem;
-    color: #ed8936;
   }
   
   .position-advice ul {
     padding-left: 1.5rem;
+    margin: 0;
   }
   
   .position-advice li {
@@ -688,25 +771,50 @@
   
   .guidelines-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
     margin-top: 1.5rem;
   }
   
   .guideline-item {
+    background-color: rgba(0, 0, 0, 0.03);
     padding: 1rem;
-    background-color: var(--bg-color);
     border-radius: 5px;
-    transition: background-color 0.3s ease, color 0.3s ease;
   }
   
   .guideline-item h3 {
-    color: var(--active-button);
-    margin-bottom: 0.5rem;
+    margin-top: 0;
+    font-size: 1rem;
   }
   
   .guideline-item p {
-    color: inherit;
-    font-size: 0.95rem;
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  
+  @media (max-width: 768px) {
+    .dashboard {
+      padding: 1rem;
+    }
+    
+    .tab-navigation {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .tab-navigation button {
+      flex: 1 1 auto;
+      font-size: 0.9rem;
+      padding: 0.5rem;
+    }
+    
+    .date-nav {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .guidelines-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style> 

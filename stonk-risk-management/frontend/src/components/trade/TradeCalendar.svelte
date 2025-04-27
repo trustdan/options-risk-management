@@ -8,6 +8,13 @@
   } from '../../../wailsjs/go/main/App';
   import { models } from '../../../wailsjs/go/models';
   
+  // Import the new TradeJournal component
+  import TradeJournal from './TradeJournal.svelte';
+  
+  // Active tab for navigation
+  let activeTab = 'calendar'; // 'calendar', 'journal'
+  let selectedTradeForJournal = null;
+  
   // Sample data for calendar
   const sectors = [
     'Technology',
@@ -33,7 +40,8 @@
     { name: 'Diagonal Spreads', color: '#f39c12' },
     { name: 'Butterfly Spreads', color: '#e74c3c' },
     { name: 'Iron Condors/Butterflies', color: '#1abc9c' },
-    { name: 'Ratio Spreads', color: '#d35400' }
+    { name: 'Ratio Spreads', color: '#d35400' },
+    { name: 'Danger - naked options ahead', color: '#ff0000' }
   ];
   
   // Strategy types with detailed options
@@ -43,8 +51,7 @@
       options: [
         { name: 'Long Call', description: 'Bullish directional bet - Buy a call option, profit from upward price movement' },
         { name: 'Long Put', description: 'Bearish directional bet - Buy a put option, profit from downward price movement' },
-        { name: 'Short Call', description: 'Bearish directional bet - Sell a call option, profit from downward or sideways price movement' },
-        { name: 'Short Put', description: 'Bullish directional bet - Sell a put option, profit from upward or sideways price movement' }
+        { name: 'Covered Call', description: 'Income strategy - Own stock and sell calls against it for premium income' }
       ]
     },
     {
@@ -92,7 +99,15 @@
       category: 'Ratio Spreads',
       options: [
         { name: 'Call Ratio Backspread', description: 'Bullish with volatility bias - Buy more calls at higher strike than selling at lower strike (e.g., 2:1 ratio)' },
-        { name: 'Put Ratio Backspread', description: 'Bearish with volatility bias - Buy more puts at lower strike than selling at higher strike (e.g., 2:1 ratio)' },
+        { name: 'Put Ratio Backspread', description: 'Bearish with volatility bias - Buy more puts at lower strike than selling at higher strike (e.g., 2:1 ratio)' }
+      ]
+    },
+    {
+      category: 'Danger - naked options ahead',
+      options: [
+        { name: 'Short Call', description: 'Bearish directional bet - Sell a call option, profit from downward or sideways price movement' },
+        { name: 'Short Put', description: 'Bullish directional bet - Sell a put option, profit from upward or sideways price movement' },
+        { name: 'Cash-Secured Put', description: 'Income strategy - Sell puts with cash to secure the potential stock purchase' },
         { name: 'Call Ratio Spread', description: 'Neutral to moderately bearish - Sell more calls at higher strike than buying at lower strike (e.g., 1:2 ratio)' },
         { name: 'Put Ratio Spread', description: 'Neutral to moderately bullish - Sell more puts at lower strike than buying at higher strike (e.g., 1:2 ratio)' }
       ]
@@ -794,291 +809,327 @@
 </script>
 
 <div class="calendar-page">
-  <div class="header-container">
-    <h2>Options Trading Calendar</h2>
-    <button class="refresh-btn" on:click={forceRefresh} title="Refresh trades from database">
-      ↻ Refresh
+  <!-- Tab navigation -->
+  <div class="tab-navigation">
+    <button 
+      class:active={activeTab === 'calendar'} 
+      on:click={() => activeTab = 'calendar'}
+    >
+      Options Calendar
     </button>
-  </div>
-  <div class="divider"></div>
-  
-  <p class="description">Track and visualize your options trades across sectors and expiration weeks.</p>
-  
-  <div class="strategy-guide">
-    <h3>Strategy Guide</h3>
-    <div class="strategy-legend">
-      {#each strategies as strategy}
-        <div class="strategy-item">
-          <span class="color-box" style="background-color: {strategy.color}"></span>
-          <span class="strategy-name">{strategy.name}</span>
-        </div>
-      {/each}
+    <button 
+      class:active={activeTab === 'journal'} 
+      on:click={() => activeTab = 'journal'}
+    >
+      Trading Journal
+    </button>
+    
+    <div class="tab-actions">
+      <button class="refresh-btn" on:click={forceRefresh} title="Refresh trades from database">
+        ↻ Refresh
+      </button>
     </div>
   </div>
-  
-  <div class="calendar-container">
-    {#key componentKey}
-    <table class="calendar">
-      <thead>
-        <tr>
-          <th class="sector-header">Sector</th>
-          {#each weeks as week}
-            <th class="week-header">
-              <div class="week-label">{week.label}</div>
-              <div class="exp-date">{week.expLabel}</div>
-            </th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#each sectors as sector}
-          <tr>
-            <td class="sector-cell">{sector}</td>
-            {#each weeks as week}
-              <td class="trade-cell" class:has-trades={hasTrades(sector, week.number)}>
-                {#if tradesLoaded}
-                  {#each getTradesForCell(sector, week.number) as trade (trade.id + '_' + week.number)}
-                    <div 
-                      class="trade-card"
-                      class:spanning-trade={trade.isSpanningLeg}
-                      class:span-start={trade.spanPosition === 'start'}
-                      class:span-middle={trade.spanPosition === 'middle'}
-                      class:span-end={trade.spanPosition === 'end'}
-                      style="background-color: {getStrategyColor(trade.strategy)}"
-                      on:click={() => handleTradeCardClick(trade)}
-                    >
-                      <div class="trade-symbol">{trade.symbol}</div>
-                      <div class="trade-type">{trade.type}</div>
-                      {#if trade.isSpanningLeg}
-                        <div class="trade-spanning-indicator">
-                          {#if trade.spanPosition === 'start'}
-                            ►
-                          {:else if trade.spanPosition === 'end'}
-                            ◄
-                          {:else if trade.spanPosition === 'middle'}
-                            ↔
-                          {/if}
-                        </div>
-                      {/if}
-                    </div>
-                  {/each}
-                {/if}
-              </td>
-            {/each}
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-    {/key}
-  </div>
-  
-  <div class="add-trade-section">
-    <h3>{isEditing ? 'Edit' : 'Add New'} Options Trade</h3>
-    
-    <div class="trade-form">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Entry Date:</label>
-          <input type="date" bind:value={newTrade.entryDate} />
-        </div>
-        
-        <div class="form-group">
-          <label>Primary Expiration Date:</label>
-          <input type="date" bind:value={newTrade.expirationDate} />
-          <div class="date-guidance">
-            <strong>Available expiration weeks:</strong>
-            <div class="week-options">
-              {#each weeks as week}
-                <div class="week-option">
-                  {week.range}
-                </div>
-              {/each}
-            </div>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Ticker:</label>
-          <input type="text" placeholder="e.g., AAPL" bind:value={newTrade.ticker} />
-        </div>
-        
-        <div class="form-group">
-          <label>Sector:</label>
-          <select bind:value={newTrade.sector}>
-            <option value="">Select a sector...</option>
-            {#each sectors as sector}
-              <option value={sector}>{sector}</option>
-            {/each}
-          </select>
-        </div>
-        
-        <div class="form-group">
-          <label>Entry Price:</label>
-          <input type="number" step="0.01" min="0" bind:value={newTrade.entryPrice} />
-        </div>
-      </div>
+
+  {#if activeTab === 'calendar'}
+    <div class="calendar-section">
+      <h2>Options Trading Calendar</h2>
+      <div class="divider"></div>
       
-      <div class="form-row">
-        <div class="form-group full-width">
-          <label>Options Strategy:</label>
-          <select bind:value={newTrade.strategy}>
-            <option value="">Select a strategy...</option>
-            {#each strategyOptions as category}
-              <optgroup label={category.category}>
-                {#each category.options as option}
-                  <option value={`${category.category} - ${option.name}`}>{option.name}</option>
-                {/each}
-              </optgroup>
-            {/each}
-          </select>
-          
-          {#if selectedStrategyDescription}
-            <div class="strategy-description">{selectedStrategyDescription}</div>
-          {/if}
-        </div>
-      </div>
+      <p class="description">Track and visualize your options trades across sectors and expiration weeks.</p>
       
-      {#if showAdditionalExpiration}
-        <div class="additional-expirations">
-          <div class="additional-header">
-            <h4>Additional Expiration Dates</h4>
-            <button type="button" class="add-btn" on:click={addExpirationField}>Add Date</button>
-          </div>
-          
-          {#each additionalExpirations as expiration, i}
-            <div class="additional-exp-row">
-              <input 
-                type="date" 
-                value={expiration} 
-                on:change={(e) => updateAdditionalExpiration(i, e.currentTarget.value)}
-              />
-              <button type="button" class="remove-btn" on:click={() => removeExpirationField(i)}>
-                ✕
-              </button>
+      <div class="strategy-guide">
+        <h3>Strategy Guide</h3>
+        <div class="strategy-legend">
+          {#each strategies as strategy}
+            <div class="strategy-item">
+              <span class="color-box" style="background-color: {strategy.color}"></span>
+              <span class="strategy-name">{strategy.name}</span>
             </div>
           {/each}
-          
-          {#if additionalExpirations.length === 0}
-            <p class="additional-note">For multi-leg strategies spanning different expiration dates</p>
-          {/if}
-        </div>
-      {/if}
-      
-      <div class="form-row">
-        <div class="form-group full-width">
-          <label>Trade Notes:</label>
-          <textarea 
-            placeholder="Add any relevant trade notes, strategy details, or observations..." 
-            bind:value={newTrade.notes}
-          ></textarea>
         </div>
       </div>
       
-      <div class="form-buttons">
-        <button class="reset-btn" on:click={resetForm}>
-          {isEditing ? 'Cancel' : 'Reset'}
-        </button>
-        <button class="add-btn" on:click={addNewTrade}>
-          {isEditing ? 'Update Trade' : 'Save Trade'}
-        </button>
-      </div>
-    </div>
-  </div>
-  
-  <div class="trade-history">
-    <h3>Options Trade History</h3>
-    
-    <div class="search-section">
-      <input 
-        type="text" 
-        placeholder="Search trades..." 
-        class="search-input" 
-        bind:value={searchQuery}
-      />
-      
-      <div class="search-filters">
-        <label>
-          <input type="radio" name="searchType" value="ticker" bind:group={searchType} />
-          Ticker
-        </label>
-        <label>
-          <input type="radio" name="searchType" value="sector" bind:group={searchType} />
-          Sector
-        </label>
-        <label>
-          <input type="radio" name="searchType" value="strategy" bind:group={searchType} />
-          Strategy
-        </label>
-        <label>
-          <input type="radio" name="searchType" value="date" bind:group={searchType} />
-          Date
-        </label>
-      </div>
-    </div>
-    
-    {#if filteredTrades.length === 0}
-      <div class="no-trades">
-        <p>No trades found. Add your first trade above.</p>
-      </div>
-    {:else}
-      <div class="trades-table-container">
-        <table class="trades-table">
+      <div class="calendar-container">
+        {#key componentKey}
+        <table class="calendar">
           <thead>
             <tr>
-              <th>Ticker</th>
-              <th>Sector</th>
-              <th>Strategy</th>
-              <th>Entry Date</th>
-              <th>Expiration</th>
-              <th>Price</th>
-              <th>Actions</th>
+              <th class="sector-header">Sector</th>
+              {#each weeks as week}
+                <th class="week-header">
+                  <div class="week-label">{week.label}</div>
+                  <div class="exp-date">{week.expLabel}</div>
+                </th>
+              {/each}
             </tr>
           </thead>
           <tbody>
-            {#each filteredTrades as trade (trade.id + '_' + trade.expirationDate.toISOString())}
+            {#each sectors as sector}
               <tr>
-                <td class="ticker-cell">{trade.symbol}</td>
-                <td>{trade.sector}</td>
-                <td>
-                  <span class="strategy-pill" style="background-color: {getStrategyColor(trade.strategy)}">
-                    {trade.type}
-                  </span>
-                </td>
-                <td>{formatDate(trade.entryDate)}</td>
-                <td>{formatDate(trade.expirationDate)}</td>
-                <td>${trade.entryPrice.toFixed(2)}</td>
-                <td class="actions-cell">
-                  <button 
-                    class="action-btn edit-btn" 
-                    on:click={() => editTrade(trade.id)}
-                    title="Edit Trade"
-                  >
-                    ✎
-                  </button>
-                  <button 
-                    class="action-btn delete-btn" 
-                    on:click={() => deleteTrade(trade.id)}
-                    title="Delete Trade"
-                  >
-                    ✕
-                  </button>
-                </td>
-              </tr>
-              {#if trade.notes}
-                <tr class="notes-row">
-                  <td colspan="7">
-                    <div class="notes-content">
-                      <strong>Notes:</strong> {trade.notes}
-                    </div>
+                <td class="sector-cell">{sector}</td>
+                {#each weeks as week}
+                  <td class="trade-cell" class:has-trades={hasTrades(sector, week.number)}>
+                    {#if tradesLoaded}
+                      {#each getTradesForCell(sector, week.number) as trade (trade.id + '_' + week.number)}
+                        <div 
+                          class="trade-card"
+                          class:spanning-trade={trade.isSpanningLeg}
+                          class:span-start={trade.spanPosition === 'start'}
+                          class:span-middle={trade.spanPosition === 'middle'}
+                          class:span-end={trade.spanPosition === 'end'}
+                          style="background-color: {getStrategyColor(trade.strategy)}"
+                          on:click={() => handleTradeCardClick(trade)}
+                        >
+                          <div class="trade-symbol">{trade.symbol}</div>
+                          <div class="trade-type">{trade.type}</div>
+                          {#if trade.isSpanningLeg}
+                            <div class="trade-spanning-indicator">
+                              {#if trade.spanPosition === 'start'}
+                                ►
+                              {:else if trade.spanPosition === 'end'}
+                                ◄
+                              {:else if trade.spanPosition === 'middle'}
+                                ↔
+                              {/if}
+                            </div>
+                          {/if}
+                        </div>
+                      {/each}
+                    {/if}
                   </td>
-                </tr>
-              {/if}
+                {/each}
+              </tr>
             {/each}
           </tbody>
         </table>
+        {/key}
       </div>
-    {/if}
-  </div>
+      
+      <div class="add-trade-section">
+        <h3>{isEditing ? 'Edit' : 'Add New'} Options Trade</h3>
+        
+        <div class="trade-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Entry Date:</label>
+              <input type="date" bind:value={newTrade.entryDate} />
+            </div>
+            
+            <div class="form-group">
+              <label>Primary Expiration Date:</label>
+              <input type="date" bind:value={newTrade.expirationDate} />
+              <div class="date-guidance">
+                <strong>Available expiration weeks:</strong>
+                <div class="week-options">
+                  {#each weeks as week}
+                    <div class="week-option">
+                      {week.range}
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Ticker:</label>
+              <input type="text" placeholder="e.g., AAPL" bind:value={newTrade.ticker} />
+            </div>
+            
+            <div class="form-group">
+              <label>Sector:</label>
+              <select bind:value={newTrade.sector}>
+                <option value="">Select a sector...</option>
+                {#each sectors as sector}
+                  <option value={sector}>{sector}</option>
+                {/each}
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>Entry Price:</label>
+              <input type="number" step="0.01" min="0" bind:value={newTrade.entryPrice} />
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label>Options Strategy:</label>
+              <select bind:value={newTrade.strategy}>
+                <option value="">Select a strategy...</option>
+                {#each strategyOptions as category}
+                  <optgroup label={category.category}>
+                    {#each category.options as option}
+                      <option value={`${category.category} - ${option.name}`}>{option.name}</option>
+                    {/each}
+                  </optgroup>
+                {/each}
+              </select>
+              
+              {#if selectedStrategyDescription}
+                <div class="strategy-description">{selectedStrategyDescription}</div>
+              {/if}
+            </div>
+          </div>
+          
+          {#if showAdditionalExpiration}
+            <div class="additional-expirations">
+              <div class="additional-header">
+                <h4>Additional Expiration Dates</h4>
+                <button type="button" class="add-btn" on:click={addExpirationField}>Add Date</button>
+              </div>
+              
+              {#each additionalExpirations as expiration, i}
+                <div class="additional-exp-row">
+                  <input 
+                    type="date" 
+                    value={expiration} 
+                    on:change={(e) => updateAdditionalExpiration(i, e.currentTarget.value)}
+                  />
+                  <button type="button" class="remove-btn" on:click={() => removeExpirationField(i)}>
+                    ✕
+                  </button>
+                </div>
+              {/each}
+              
+              {#if additionalExpirations.length === 0}
+                <p class="additional-note">For multi-leg strategies spanning different expiration dates</p>
+              {/if}
+            </div>
+          {/if}
+          
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label>Trade Notes:</label>
+              <textarea 
+                placeholder="Add any relevant trade notes, strategy details, or observations..." 
+                bind:value={newTrade.notes}
+              ></textarea>
+            </div>
+          </div>
+          
+          <div class="form-buttons">
+            <button class="reset-btn" on:click={resetForm}>
+              {isEditing ? 'Cancel' : 'Reset'}
+            </button>
+            <button class="add-btn" on:click={addNewTrade}>
+              {isEditing ? 'Update Trade' : 'Save Trade'}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="trade-history">
+        <h3>Options Trade History</h3>
+        
+        <div class="search-section">
+          <input 
+            type="text" 
+            placeholder="Search trades..." 
+            class="search-input" 
+            bind:value={searchQuery}
+          />
+          
+          <div class="search-filters">
+            <label>
+              <input type="radio" name="searchType" value="ticker" bind:group={searchType} />
+              Ticker
+            </label>
+            <label>
+              <input type="radio" name="searchType" value="sector" bind:group={searchType} />
+              Sector
+            </label>
+            <label>
+              <input type="radio" name="searchType" value="strategy" bind:group={searchType} />
+              Strategy
+            </label>
+            <label>
+              <input type="radio" name="searchType" value="date" bind:group={searchType} />
+              Date
+            </label>
+          </div>
+        </div>
+        
+        {#if filteredTrades.length === 0}
+          <div class="no-trades">
+            <p>No trades found. Add your first trade above.</p>
+          </div>
+        {:else}
+          <div class="trades-table-container">
+            <table class="trades-table">
+              <thead>
+                <tr>
+                  <th>Ticker</th>
+                  <th>Sector</th>
+                  <th>Strategy</th>
+                  <th>Entry Date</th>
+                  <th>Expiration</th>
+                  <th>Price</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each filteredTrades as trade (trade.id + '_' + trade.expirationDate.toISOString())}
+                  <tr>
+                    <td class="ticker-cell">{trade.symbol}</td>
+                    <td>{trade.sector}</td>
+                    <td>
+                      <span class="strategy-pill" style="background-color: {getStrategyColor(trade.strategy)}">
+                        {trade.type}
+                      </span>
+                    </td>
+                    <td>{formatDate(trade.entryDate)}</td>
+                    <td>{formatDate(trade.expirationDate)}</td>
+                    <td>${trade.entryPrice.toFixed(2)}</td>
+                    <td class="actions-cell">
+                      <button 
+                        class="action-btn edit-btn" 
+                        on:click={() => editTrade(trade.id)}
+                        title="Edit Trade"
+                      >
+                        ✎
+                      </button>
+                      <button 
+                        class="action-btn journal-btn" 
+                        on:click={() => { selectedTradeForJournal = trade; activeTab = 'journal'; }}
+                        title="Add to Journal"
+                      >
+                        📝
+                      </button>
+                      <button 
+                        class="action-btn delete-btn" 
+                        on:click={() => deleteTrade(trade.id)}
+                        title="Delete Trade"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  </tr>
+                  {#if trade.notes}
+                    <tr class="notes-row">
+                      <td colspan="7">
+                        <div class="notes-content">
+                          <strong>Notes:</strong> {trade.notes}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
+    </div>
+  {:else if activeTab === 'journal'}
+    <TradeJournal 
+      trades={trades} 
+      {strategyOptions} 
+      {sectors} 
+      editExistingTrade={selectedTradeForJournal}
+      refreshTrades={forceRefresh}
+    />
+  {/if}
 </div>
 
 <style>
@@ -1090,6 +1141,49 @@
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Tab Navigation Styles */
+  .tab-navigation {
+    display: flex;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .tab-navigation button {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    color: inherit;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -1px;
+  }
+  
+  .tab-navigation button.active {
+    font-weight: bold;
+    border-bottom: 3px solid var(--primary-button);
+    color: var(--primary-button);
+  }
+  
+  .tab-navigation button:hover:not(.active) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .tab-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+  }
+  
+  .calendar-section {
+    /* This wrapper ensures the calendar content layout isn't affected */
+  }
+
+  .journal-btn {
+    background-color: #805ad5; /* Purple-ish color for journal button */
   }
   
   h2, h3, h4 {

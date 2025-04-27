@@ -34,7 +34,22 @@ body.dark-mode .trade-history,
 body.dark-mode .recommendation,
 body.dark-mode .guidelines,
 body.dark-mode .assessment-form,
-body.dark-mode .rating-section {
+body.dark-mode .rating-section,
+body.dark-mode .journal-container,
+body.dark-mode .analytics {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+/* Additional specific selectors for Risk Analytics and Journal components */
+body.dark-mode .stats-section,
+body.dark-mode .insight-card,
+body.dark-mode .chart-container,
+body.dark-mode .correlation-explanation,
+body.dark-mode .stat-card,
+body.dark-mode .journal-form,
+body.dark-mode .entries-table {
     background-color: var(--card-bg);
     color: var(--text-color);
     border-color: var(--border-color);
@@ -54,7 +69,8 @@ body.dark-mode .divider {
 
 body.dark-mode input,
 body.dark-mode select,
-body.dark-mode textarea {
+body.dark-mode textarea,
+body.dark-mode .input-field {
     background-color: var(--input-bg);
     border-color: var(--input-border);
     color: var(--text-color);
@@ -67,6 +83,39 @@ body.dark-mode td {
 
 body.dark-mode button {
     color: var(--text-color);
+}
+
+/* Button specific styling for dark mode */
+body.dark-mode .btn-primary,
+body.dark-mode button.btn-primary {
+    background-color: var(--primary-button);
+    color: white;
+}
+
+body.dark-mode .btn-primary:hover,
+body.dark-mode button.btn-primary:hover {
+    background-color: var(--primary-button-hover);
+}
+
+body.dark-mode .btn-secondary,
+body.dark-mode button.btn-secondary {
+    background-color: var(--secondary-button);
+    color: var(--text-color);
+}
+
+body.dark-mode .btn-secondary:hover,
+body.dark-mode button.btn-secondary:hover {
+    background-color: var(--secondary-button-hover);
+}
+
+body.dark-mode .btn-edit,
+body.dark-mode button.btn-edit {
+    color: var(--primary-button);
+}
+
+body.dark-mode .btn-delete,
+body.dark-mode button.btn-delete {
+    color: var(--danger-color);
 }
 
 body.dark-mode nav button.active {

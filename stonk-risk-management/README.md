@@ -12,6 +12,14 @@ A comprehensive desktop application for options traders to manage risk, track st
 - P&L impact analysis
 - Position sizing recommendations based on psychological state
 
+### Trading Journal
+- Record and reflect on completed trades
+- Track emotional state during trades
+- Document lessons learned and improvement plans
+- Color-coded strategy visualization
+- Win/loss tracking with P&L recording
+- Consistent strategy categorization with Options Trading Calendar
+
 ### Stock Rating Dashboard
 - Market and sector sentiment tracking
 - Individual stock ratings
@@ -25,6 +33,10 @@ A comprehensive desktop application for options traders to manage risk, track st
 - Multi-sector trade organization
 - Trade entry and management
 - Strategy guide with visual indicators
+- Complete options strategy selection including:
+  - Basic strategies (Long/Short Calls and Puts)
+  - Income strategies (Covered Calls and Cash-Secured Puts)
+  - Advanced strategies (Spreads, Iron Condors, Butterflies)
 
 ## Installation
 
@@ -53,6 +65,33 @@ wails build
 
 ### Data Storage
 All your data is stored locally in `~/.stonk-risk-management` directory.
+
+### Supported Options Strategies
+The application supports a comprehensive range of options trading strategies, including:
+
+#### Basic Spreads
+- Long Call/Put - Directional bets on market movement
+- Covered Call - Owning stock and selling calls against it for premium income
+
+#### Vertical Spreads
+- Bull Call Spread - Bullish strategy with limited risk/reward
+- Bear Call Spread - Bearish strategy with limited risk/reward
+- Bull Put Spread - Bullish strategy with limited risk/reward
+- Bear Put Spread - Bearish strategy with limited risk/reward
+
+#### Advanced Strategies
+- Calendar/Horizontal Spreads - Time-based spreads with different expiration dates
+- Diagonal Spreads - Combining different strikes and expiration dates
+- Butterfly Spreads - Neutral strategies for limited price movement
+- Iron Condors/Butterflies - Range-bound strategies for selling premium
+- Ratio Spreads (Backspreads) - Unbalanced spreads with more long than short options
+
+#### Danger - naked options ahead
+- Short Call - Bearish directional bet with unlimited risk potential
+- Short Put - Bullish directional bet with significant downside risk
+- Cash-Secured Put - Selling puts with cash to secure the potential stock purchase (risk of capital misallocation)
+- Call Ratio Spread - Neutral to moderately bearish with naked call exposure (more short than long options)
+- Put Ratio Spread - Neutral to moderately bullish with naked put exposure (more short than long options)
 
 ## Development
 
