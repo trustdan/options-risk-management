@@ -1,5 +1,5 @@
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/teal_img.png)](https://www.buymeacoffee.com/admitchu)
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/green_img.png)](https://www.buymeacoffee.com/admitchu)
 
 # Options Trading Dashboard
 
