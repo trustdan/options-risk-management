@@ -1,6 +1,7 @@
 # Options Trading Dashboard
 
-![Risk Management Dashboard](https://placeholder-for-app-screenshot.png)
+![image](https://github.com/user-attachments/assets/9a56ba9f-fb22-42a8-b858-21f61950ca3f)
+
 
 ## Trade With Confidence Through Better Psychology
 
