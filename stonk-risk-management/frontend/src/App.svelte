@@ -4,10 +4,11 @@
   import TradeCalendar from './components/trade/TradeCalendar.svelte';
   import TradingKoans from './components/koans/TradingKoans.svelte';
   import { WindowSetDarkTheme, WindowSetLightTheme } from '../wailsjs/runtime/runtime';
+  import { VERSION } from './version.js';
   
   let activeView = 'stock'; // Default to 'stock' view to match screenshots
   let isDarkMode = true; // Default to dark mode to match screenshots
-  const version = "v0.1.0";
+  const version = "v" + VERSION;
   
   // Reference to component instances
   let riskDashboardComponent;
@@ -210,7 +211,7 @@ Warning: This will overwrite any existing data in the application. Make a backup
   </div>
   
   <footer>
-    <p>© {new Date().getFullYear()} Options Risk Management - v1.0.0</p>
+    <p>© {new Date().getFullYear()} Options Risk Management - v{VERSION}</p>
   </footer>
 </main>
 

@@ -6,7 +6,24 @@ $ErrorActionPreference = "Stop"
 
 # Configuration - using the name from wails.json
 $appName = "Options Trading Dashboard"
-$appVersion = "1.0.0"
+
+# Read the version from the version.js file
+$versionJsPath = "frontend/src/version.js"
+if (Test-Path $versionJsPath) {
+    $versionContent = Get-Content $versionJsPath
+    $versionMatch = [regex]::Match($versionContent, 'VERSION = "([^"]+)"')
+    if ($versionMatch.Success) {
+        $appVersion = $versionMatch.Groups[1].Value
+        Write-Host "Using version $appVersion from version.js"
+    } else {
+        $appVersion = "1.0.0"
+        Write-Host "Could not extract version from version.js, using default: $appVersion" -ForegroundColor Yellow
+    }
+} else {
+    $appVersion = "1.0.0"
+    Write-Host "version.js not found, using default version: $appVersion" -ForegroundColor Yellow
+}
+
 $outputDir = "build"
 $installerDir = "installer"
 $executableName = "options-trading-dashboard" # Changed to match wails.json outputfilename
