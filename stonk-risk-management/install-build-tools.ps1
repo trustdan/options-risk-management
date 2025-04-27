@@ -37,8 +37,8 @@ if (Check-Command "go") {
 } else {
     Write-Host "Go is not installed. Installing..." -ForegroundColor Yellow
     
-    # Download Go installer
-    $goInstallerUrl = "https://golang.org/dl/go1.19.windows-amd64.msi"
+    # Download Go installer - updated to newer version
+    $goInstallerUrl = "https://go.dev/dl/go1.21.6.windows-amd64.msi"
     $goInstallerPath = Join-Path $tempDir "go_installer.msi"
     
     try {
@@ -46,6 +46,9 @@ if (Check-Command "go") {
         Write-Host "Installing Go..."
         Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $goInstallerPath, "/qb" -Wait
         Write-Host "Go installed successfully" -ForegroundColor Green
+        
+        # Refresh PATH environment variable to make Go available immediately
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     }
     catch {
         Write-Host "Failed to download or install Go: $_" -ForegroundColor Red
@@ -61,8 +64,8 @@ if (Check-Command "node") {
 } else {
     Write-Host "Node.js is not installed. Installing..." -ForegroundColor Yellow
     
-    # Download Node.js installer
-    $nodeInstallerUrl = "https://nodejs.org/dist/v16.18.0/node-v16.18.0-x64.msi"
+    # Download Node.js installer - updated to LTS version
+    $nodeInstallerUrl = "https://nodejs.org/dist/v20.10.0/node-v20.10.0-x64.msi"
     $nodeInstallerPath = Join-Path $tempDir "node_installer.msi"
     
     try {
@@ -70,6 +73,9 @@ if (Check-Command "node") {
         Write-Host "Installing Node.js..."
         Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $nodeInstallerPath, "/qb" -Wait
         Write-Host "Node.js installed successfully" -ForegroundColor Green
+        
+        # Refresh PATH environment variable to make Node.js available immediately
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     }
     catch {
         Write-Host "Failed to download or install Node.js: $_" -ForegroundColor Red
@@ -82,14 +88,38 @@ Write-Host "Checking for Wails installation..." -ForegroundColor Cyan
 if (Check-Command "wails") {
     $wailsVersion = (wails version)
     Write-Host "Wails is already installed (version $wailsVersion)" -ForegroundColor Green
+    
+    # Update Wails to latest version
+    Write-Host "Updating Wails to latest version..." -ForegroundColor Cyan
+    try {
+        Start-Process -FilePath "go" -ArgumentList "install", "github.com/wailsapp/wails/v2/cmd/wails@latest" -Wait -NoNewWindow
+        $newWailsVersion = (wails version)
+        Write-Host "Wails updated to version $newWailsVersion" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to update Wails: $_" -ForegroundColor Red
+    }
 } else {
     Write-Host "Wails is not installed. Installing..." -ForegroundColor Yellow
     
     try {
         Write-Host "Installing Wails via Go..."
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine")
+        # Make sure GOPATH is in PATH
+        $goPath = Join-Path $env:USERPROFILE "go\bin"
+        if (-not ($env:Path -like "*$goPath*")) {
+            $env:Path += ";$goPath"
+        }
+        
         Start-Process -FilePath "go" -ArgumentList "install", "github.com/wailsapp/wails/v2/cmd/wails@latest" -Wait -NoNewWindow
-        Write-Host "Wails installed successfully" -ForegroundColor Green
+        
+        # Verify installation
+        if (Check-Command "wails") {
+            $wailsVersion = (wails version)
+            Write-Host "Wails installed successfully (version $wailsVersion)" -ForegroundColor Green
+        } else {
+            Write-Host "Wails installation completed but wails command not found in PATH" -ForegroundColor Yellow
+            Write-Host "You may need to restart your terminal or add Go bin directory to your PATH" -ForegroundColor Yellow
+        }
     }
     catch {
         Write-Host "Failed to install Wails: $_" -ForegroundColor Red
@@ -99,14 +129,27 @@ if (Check-Command "wails") {
 
 # 4. Check and install Inno Setup if needed
 Write-Host "Checking for Inno Setup installation..." -ForegroundColor Cyan
-$innoSetupCompiler = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-if (Test-Path $innoSetupCompiler) {
-    Write-Host "Inno Setup is already installed" -ForegroundColor Green
-} else {
+$innoSetupCompilerPaths = @(
+    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+    "C:\Program Files\Inno Setup 6\ISCC.exe",
+    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+    "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+)
+
+$innoSetupFound = $false
+foreach ($path in $innoSetupCompilerPaths) {
+    if (Test-Path $path) {
+        Write-Host "Inno Setup is already installed at: $path" -ForegroundColor Green
+        $innoSetupFound = $true
+        break
+    }
+}
+
+if (-not $innoSetupFound) {
     Write-Host "Inno Setup is not installed. Installing..." -ForegroundColor Yellow
     
-    # Download Inno Setup installer
-    $innoSetupUrl = "https://jrsoftware.org/download.php/is.exe"
+    # Download Inno Setup installer - using direct link
+    $innoSetupUrl = "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe"
     $innoSetupPath = Join-Path $tempDir "inno_setup_installer.exe"
     
     try {

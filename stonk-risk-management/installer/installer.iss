@@ -1,8 +1,8 @@
-﻿#define MyAppName "Stonk Risk Management"
+﻿#define MyAppName "Options Trading Dashboard"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "Stonk Risk Management"
-#define MyAppURL "https://github.com/yourusername/stonk-risk-management"
-#define MyAppExeName "stonk-risk-management.exe"
+#define MyAppPublisher "Options Trading Dashboard"
+#define MyAppURL "https://github.com/yourusername/options-trading-dashboard"
+#define MyAppExeName "options-trading-dashboard.exe"
 
 [Setup]
 AppId={{7D49E80F-96A9-4AC7-B7C9-B95CD2219C3A}
@@ -17,7 +17,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 OutputDir=..\installer
-OutputBaseFilename=stonk-risk-management-setup-{#MyAppVersion}
+OutputBaseFilename=options-trading-dashboard-setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -29,7 +29,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\build\bin\stonk-risk-management.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\build\bin\options-trading-dashboard.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 ; Add any additional files or directories here
 

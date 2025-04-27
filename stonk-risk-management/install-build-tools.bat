@@ -12,10 +12,10 @@ if %errorLevel% == 0 (
     echo Attempting to elevate privileges...
     echo.
     
-    :: Attempt to run the script with elevated permissions
+    :: Attempt to run the script with elevated permissions and bypass execution policy
     powershell -Command "Start-Process cmd -ArgumentList '/c cd /d \"%~dp0\" && powershell -ExecutionPolicy Bypass -File \"%~dp0install-build-tools.ps1\"' -Verb RunAs" 
     exit /b
 )
 
-:: Run the PowerShell script
+:: Run the PowerShell script with bypass execution policy
 powershell -ExecutionPolicy Bypass -File "%~dp0install-build-tools.ps1" 

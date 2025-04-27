@@ -3,7 +3,6 @@
   import StockDashboard from './components/stock/StockDashboard.svelte';
   import TradeCalendar from './components/trade/TradeCalendar.svelte';
   import TradingKoans from './components/koans/TradingKoans.svelte';
-  import DataImportExport from './components/common/DataImportExport.svelte';
   import { WindowSetDarkTheme, WindowSetLightTheme } from '../wailsjs/runtime/runtime';
   
   let activeView = 'stock'; // Default to 'stock' view to match screenshots
@@ -97,7 +96,6 @@
     <div class="header-content">
       <h1>Options Trading Dashboard</h1>
       <div class="header-right">
-        <DataImportExport position="header" />
         <a href="https://docs.google.com/forms/d/e/1FAIpQLSdy5CEPbAFFli589aR1DPEVUJli5MxRNYsl8PmS4E-srgt7IA/viewform" target="_blank" class="feedback-btn" title="Provide Feedback">
           📝 Feedback
         </a>
@@ -157,7 +155,6 @@
   </div>
   
   <footer>
-    <DataImportExport position="footer" />
     <p>© {new Date().getFullYear()} Options Risk Management - v1.0.0</p>
   </footer>
 </main>

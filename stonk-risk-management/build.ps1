@@ -4,11 +4,13 @@
 # Stop on any error
 $ErrorActionPreference = "Stop"
 
-# Configuration
+# Configuration - using the name from wails.json
 $appName = "Options Trading Dashboard"
 $appVersion = "1.0.0"
 $outputDir = "build"
 $installerDir = "installer"
+$executableName = "options-trading-dashboard" # Changed to match wails.json outputfilename
+$installerName = "options-trading-dashboard" # Changed installer name as requested
 
 # Create output directories if they don't exist
 if (-not (Test-Path $outputDir)) {
@@ -33,7 +35,8 @@ if (-not (Get-Command wails -ErrorAction SilentlyContinue)) {
 
 # Run wails build
 try {
-    wails build
+    # Add -skipbindings flag to fix common build issues
+    wails build -skipbindings
     Write-Host "Application built successfully!" -ForegroundColor Green
 }
 catch {
@@ -51,7 +54,7 @@ $innoContent = @"
 #define MyAppVersion "$appVersion"
 #define MyAppPublisher "Options Trading Dashboard"
 #define MyAppURL "https://github.com/yourusername/options-trading-dashboard"
-#define MyAppExeName "options-trading-dashboard.exe"
+#define MyAppExeName "$executableName.exe"
 
 [Setup]
 AppId={{7D49E80F-96A9-4AC7-B7C9-B95CD2219C3A}
@@ -66,7 +69,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 OutputDir=..\$installerDir
-OutputBaseFilename=options-trading-dashboard-setup-{#MyAppVersion}
+OutputBaseFilename=$installerName-setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -78,7 +81,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\build\bin\options-trading-dashboard.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\build\bin\$executableName.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 ; Add any additional files or directories here
 
@@ -123,14 +126,24 @@ if (-not $innoSetupCompiler) {
         exit 1
     }
 } else {
+    # Ensure the installer directory exists and is empty for a clean build
+    if (Test-Path "$installerDir\$installerName-setup-$appVersion.exe") {
+        Write-Host "Removing existing installer..." -ForegroundColor Yellow
+        Remove-Item "$installerDir\$installerName-setup-$appVersion.exe" -Force
+    }
+    
     # Compile the installer
     try {
         Write-Host "Found Inno Setup compiler at: $innoSetupCompiler" -ForegroundColor Green
         & $innoSetupCompiler $innoSetupScript
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "Installer created successfully!" -ForegroundColor Green
-            Write-Host "You can find it in the '$installerDir' directory." -ForegroundColor Green
+            # Verify the installer was created
+            if (Test-Path "$installerDir\$installerName-setup-$appVersion.exe") {
+                Write-Host "Installer created successfully at: $installerDir\$installerName-setup-$appVersion.exe" -ForegroundColor Green
+            } else {
+                Write-Host "Warning: Installer compilation reported success but the file was not found at the expected location." -ForegroundColor Yellow
+            }
         } else {
             Write-Host "Failed to create installer." -ForegroundColor Red
             exit 1

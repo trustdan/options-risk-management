@@ -14,14 +14,6 @@ export function DeleteTrade(arg1) {
   return window['go']['main']['App']['DeleteTrade'](arg1);
 }
 
-export function ExportData(arg1) {
-  return window['go']['main']['App']['ExportData'](arg1);
-}
-
-export function GetCurrentDirectory() {
-  return window['go']['main']['App']['GetCurrentDirectory']();
-}
-
 export function GetRiskAssessments() {
   return window['go']['main']['App']['GetRiskAssessments']();
 }
@@ -38,16 +30,8 @@ export function GetTrades() {
   return window['go']['main']['App']['GetTrades']();
 }
 
-export function GetUserDirectory() {
-  return window['go']['main']['App']['GetUserDirectory']();
-}
-
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
-}
-
-export function ImportData(arg1) {
-  return window['go']['main']['App']['ImportData'](arg1);
 }
 
 export function SaveRiskAssessment(arg1) {
@@ -60,12 +44,4 @@ export function SaveStockRating(arg1) {
 
 export function SaveTrade(arg1) {
   return window['go']['main']['App']['SaveTrade'](arg1);
-}
-
-export function ShowOpenDialog(arg1) {
-  return window['go']['main']['App']['ShowOpenDialog'](arg1);
-}
-
-export function ShowSaveDialog(arg1) {
-  return window['go']['main']['App']['ShowSaveDialog'](arg1);
 }
