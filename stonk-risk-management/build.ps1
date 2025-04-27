@@ -1,11 +1,11 @@
-# Options Risk Management Build Script
+# Options Trading Dashboard Build Script
 # This script builds both the application and installer
 
 # Stop on any error
 $ErrorActionPreference = "Stop"
 
 # Configuration
-$appName = "Options Risk Management"
+$appName = "Options Trading Dashboard"
 $appVersion = "1.0.0"
 $outputDir = "build"
 $installerDir = "installer"
@@ -22,7 +22,7 @@ if (-not (Test-Path $installerDir)) {
 }
 
 # Step 1: Build the Wails application
-Write-Host "Building Options Risk Management application..." -ForegroundColor Cyan
+Write-Host "Building Options Trading Dashboard application..." -ForegroundColor Cyan
 
 # Check if wails is installed
 if (-not (Get-Command wails -ErrorAction SilentlyContinue)) {
@@ -49,9 +49,9 @@ Write-Host "Creating Inno Setup script..." -ForegroundColor Cyan
 $innoContent = @"
 #define MyAppName "$appName"
 #define MyAppVersion "$appVersion"
-#define MyAppPublisher "Options Risk Management"
-#define MyAppURL "https://github.com/yourusername/options-risk-management"
-#define MyAppExeName "options-risk-management.exe"
+#define MyAppPublisher "Options Trading Dashboard"
+#define MyAppURL "https://github.com/yourusername/options-trading-dashboard"
+#define MyAppExeName "options-trading-dashboard.exe"
 
 [Setup]
 AppId={{7D49E80F-96A9-4AC7-B7C9-B95CD2219C3A}
@@ -66,7 +66,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 OutputDir=..\$installerDir
-OutputBaseFilename=options-risk-management-setup-{#MyAppVersion}
+OutputBaseFilename=options-trading-dashboard-setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -78,7 +78,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\build\bin\options-risk-management.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\build\bin\options-trading-dashboard.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 ; Add any additional files or directories here
 

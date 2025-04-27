@@ -1,5 +1,5 @@
 @echo off
-echo Options Risk Management - Build Tools Installer
+echo Options Trading Dashboard - Build Tools Installer
 echo ================================================
 echo.
 

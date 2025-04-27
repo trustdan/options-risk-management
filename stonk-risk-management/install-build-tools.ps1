@@ -1,7 +1,7 @@
-# Options Risk Management - Build Tools Installer
+# Options Trading Dashboard - Build Tools Installer
 # This script helps install necessary build tools like Inno Setup
 
-Write-Host "Options Risk Management - Build Tools Installer" -ForegroundColor Cyan
+Write-Host "Options Trading Dashboard - Build Tools Installer" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -19,7 +19,7 @@ if (-not $isAdmin) {
 }
 
 # Create a temp directory
-$tempDir = Join-Path $env:TEMP "options-risk-management-setup"
+$tempDir = Join-Path $env:TEMP "options-trading-dashboard-setup"
 if (-not (Test-Path $tempDir)) {
     New-Item -Path $tempDir -ItemType Directory | Out-Null
 }

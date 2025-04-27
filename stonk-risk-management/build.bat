@@ -1,5 +1,5 @@
 @echo off
-echo Options Risk Management Build Script
+echo Options Trading Dashboard Build Script
 echo ================================
 echo.
 
