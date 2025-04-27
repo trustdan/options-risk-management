@@ -825,9 +825,7 @@
     </button>
     
     <div class="tab-actions">
-      <button class="refresh-btn" on:click={forceRefresh} title="Refresh trades from database">
-        ↻ Refresh
-      </button>
+      <!-- Refresh button removed -->
     </div>
   </div>
 

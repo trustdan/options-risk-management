@@ -37,7 +37,7 @@ func (a *App) startup(ctx context.Context) {
 		log.Fatalf("Failed to get user home directory: %v", err)
 	}
 
-	dbPath := filepath.Join(homeDir, ".stonk-risk-management")
+	dbPath := filepath.Join(homeDir, ".options-risk-management")
 	db, err := database.New(dbPath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)

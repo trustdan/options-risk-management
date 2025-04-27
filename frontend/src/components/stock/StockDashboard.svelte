@@ -1,18 +1,19 @@
 <script>
   import { onMount } from 'svelte';
   import StockForm from './StockForm.svelte';
-  import StockAnalytics from './StockAnalytics.svelte';
+  import MarketAnalytics from './MarketAnalytics.svelte';
   
   let ratings = [];
+  let marketAndSectorRatings = []; // Filtered ratings for market analytics
   let dates = [];
   let dateIndex = 0;
   let currentDay = [];
-  let activeTab = 'form'; // 'form' or 'analytics'
+  let activeTab = 'form'; // 'form' or 'market'
   let newRating = {};
   
   onMount(async () => {
     try {
-      loadAllRatings();
+      await loadAllRatings();
     } catch (error) {
       console.error("Failed to load stock ratings:", error);
     }
@@ -21,6 +22,13 @@
   async function loadAllRatings() {
     const result = await window.go.main.App.GetStockRatings();
     ratings = result || [];
+    
+    // Filter market and sector-specific ratings
+    marketAndSectorRatings = ratings.filter(r => 
+      r.symbol === 'MARKET' || 
+      r.symbol === 'SECTOR' || 
+      (r.notes && (r.notes.includes('marketRating') || r.notes.includes('sectorRating')))
+    );
     
     // Group by date
     const byDate = groupByDate(ratings);
@@ -83,53 +91,77 @@
     if (dateIndex > 0) loadDate(dateIndex - 1);
   }
   
+  // Refresh ratings after saving
+  async function refreshRatings() {
+    try {
+      const result = await window.go.main.App.GetStockRatings();
+      ratings = result || [];
+      
+      // Update market and sector filtered ratings
+      marketAndSectorRatings = ratings.filter(r => 
+        r.symbol === 'MARKET' || 
+        r.symbol === 'SECTOR' || 
+        (r.notes && (r.notes.includes('marketRating') || r.notes.includes('sectorRating')))
+      );
+      
+      // Group by date
+      const byDate = groupByDate(ratings);
+      dates = Object.keys(byDate).sort();
+      
+      if (dates.length) {
+        // Stay on current date if possible
+        const currentDateStr = newRating.date;
+        const currentDateIndex = dates.indexOf(currentDateStr);
+        
+        if (currentDateIndex >= 0) {
+          loadDate(currentDateIndex);
+        } else {
+          loadDate(dates.length - 1); // Load most recent
+        }
+      } else {
+        resetNewRating();
+        currentDay = [];
+      }
+    } catch (error) {
+      console.error('Failed to refresh ratings:', error);
+    }
+  }
+  
   async function saveStockRating() {
     try {
       // Ensure enthusiasm is a number
-      const enthusiasmValue = parseInt(rating.enthusiasm.toString(), 10) || 0;
+      const enthusiasmValue = parseInt(newRating.enthusiasm?.toString() || '0', 10) || 0;
       
       // Create a compatible object for saving
       const ratingToSave = {
-        id: rating.id || '',
-        date: new Date(rating.date),
-        symbol: rating.symbol,
-        sector: rating.sector,
-        stockSentiment: rating.stockSentiment,
-        priceTarget: rating.priceTarget || 0,
-        confidence: rating.confidence || 0,
+        id: newRating.id || '',
+        date: new Date(newRating.date),
+        symbol: newRating.symbol,
+        sector: newRating.sector,
+        stockSentiment: newRating.stockSentiment,
+        priceTarget: newRating.priceTarget || 0,
+        confidence: newRating.confidence || 0,
         // Explicitly set enthusiasm
         enthusiasm: enthusiasmValue,
-        // Convert chartPatterns array to a string
-        chartPattern: rating.chartPatterns.join(', '),
+        // Convert chartPatterns array to a string if they exist
+        chartPattern: newRating.chartPatterns ? newRating.chartPatterns.join(', ') : '',
         // Store original data in notes if needed
-        notes: rating.notes
+        notes: newRating.notes
       };
 
       console.log('Saving rating with explicit fields:', ratingToSave);
-      await SaveStockRating(ratingToSave);
+      await window.go.main.App.SaveStockRating(ratingToSave);
       
       // Refresh ratings
       await refreshRatings();
       
       // Clear form for next entry
-      rating = {
-        id: '',
-        date: rating.date,
-        symbol: '',
-        sector: '',
-        stockSentiment: 0,
-        priceTarget: 0,
-        confidence: 0,
-        chartPatterns: [],
-        selectedPattern: '',
-        enthusiasm: 0,
-        notes: ''
-      };
+      resetNewRating(newRating.date);
       
-      alert('Stock rating saved successfully');
+      showToast('Stock rating saved successfully');
     } catch (error) {
       console.error('Failed to save rating:', error);
-      alert('Failed to save rating: ' + error.message);
+      showToast('Failed to save rating: ' + error.message, true);
     }
   }
   
@@ -194,10 +226,10 @@
       Stock Ratings
     </button>
     <button 
-      class:active={activeTab === 'analytics'} 
-      on:click={() => activeTab = 'analytics'}
+      class:active={activeTab === 'market'} 
+      on:click={() => activeTab = 'market'}
     >
-      Analytics
+      Market Analytics
     </button>
   </div>
   
@@ -281,8 +313,8 @@
         on:save={saveStockRating} 
       />
     </div>
-  {:else if activeTab === 'analytics'}
-    <StockAnalytics {ratings} />
+  {:else if activeTab === 'market'}
+    <MarketAnalytics ratings={marketAndSectorRatings} />
   {/if}
 </div>
 

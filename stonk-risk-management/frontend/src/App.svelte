@@ -9,6 +9,11 @@
   let isDarkMode = true; // Default to dark mode to match screenshots
   const version = "v0.1.0";
   
+  // Reference to component instances
+  let riskDashboardComponent;
+  let stockDashboardComponent;
+  let tradeCalendarComponent;
+  
   function switchView(view) {
     activeView = view;
   }
@@ -23,6 +28,26 @@
       WindowSetLightTheme();
       document.body.classList.remove('dark-mode');
     }
+  }
+  
+  // Function to refresh the entire application
+  function refreshApp() {
+    console.log('Global refresh triggered');
+    
+    // Check which component is active and refresh it
+    if (activeView === 'risk' && riskDashboardComponent && riskDashboardComponent.loadRiskAssessments) {
+      riskDashboardComponent.loadRiskAssessments();
+    } else if (activeView === 'stock' && stockDashboardComponent && stockDashboardComponent.loadStockRatings) {
+      stockDashboardComponent.loadStockRatings();
+    } else if (activeView === 'trade' && tradeCalendarComponent && tradeCalendarComponent.forceRefresh) {
+      tradeCalendarComponent.forceRefresh();
+    }
+    
+    // Reload the window as a fallback if component methods don't exist
+    setTimeout(() => {
+      // Force a window refresh in case component methods didn't work
+      window.location.reload();
+    }, 500);
   }
   
   // On mount, set the initial theme
@@ -69,8 +94,14 @@
   
   <header>
     <div class="header-content">
-      <h1>Trading Dashboard</h1>
+      <h1>Options Trading Dashboard</h1>
       <div class="header-right">
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSdy5CEPbAFFli589aR1DPEVUJli5MxRNYsl8PmS4E-srgt7IA/viewform" target="_blank" class="feedback-btn" title="Provide Feedback">
+          📝 Feedback
+        </a>
+        <button class="refresh-btn" on:click={refreshApp} title="Refresh application data">
+          ↻ Refresh
+        </button>
         <span class="version">{version}</span>
         <button class="theme-toggle" on:click={toggleTheme}>
           {isDarkMode ? '☀️' : '🌙'}
@@ -113,11 +144,11 @@
   
   <div class="content">
     {#if activeView === 'risk'}
-      <RiskDashboard />
+      <RiskDashboard bind:this={riskDashboardComponent} />
     {:else if activeView === 'stock'}
-      <StockDashboard />
+      <StockDashboard bind:this={stockDashboardComponent} />
     {:else if activeView === 'trade'}
-      <TradeCalendar />
+      <TradeCalendar bind:this={tradeCalendarComponent} />
     {:else if activeView === 'koans'}
       <TradingKoans />
     {/if}
@@ -255,6 +286,45 @@
     align-items: center;
     gap: 1rem;
     margin-right: 100px; /* Add space to avoid overlap with GitHub corner */
+  }
+  
+  .feedback-btn {
+    background-color: var(--secondary-button);
+    color: inherit;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  
+  .feedback-btn:hover {
+    background-color: var(--secondary-button-hover);
+    opacity: 0.9;
+  }
+  
+  .refresh-btn {
+    background-color: var(--secondary-button);
+    color: inherit;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+  }
+  
+  .refresh-btn:hover {
+    background-color: var(--secondary-button-hover);
+    transform: rotate(180deg);
   }
   
   .version {
