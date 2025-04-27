@@ -1,51 +1,78 @@
-# Options Risk Management
+# Stonk Risk Management
 
-A comprehensive desktop application for options traders to manage risk, track stock sentiments, and visualize upcoming trades.
+![Risk Management Dashboard](https://placeholder-for-app-screenshot.png)
 
-## Features
+## Trade With Confidence Through Better Psychology
 
-### Risk Management Dashboard
-- Daily emotional and psychological state assessment
-- FOMO (Fear of Missing Out) level tracking
-- Market bias monitoring
-- Physical condition assessment
-- P&L impact analysis
-- Position sizing recommendations based on psychological state
+**Stonk Risk Management** is a powerful desktop application designed to help stock and options traders take control of their trading psychology, manage risk effectively, and make more informed trading decisions.
 
-### Trading Journal
-- Record and reflect on completed trades
-- Track emotional state during trades
-- Document lessons learned and improvement plans
-- Color-coded strategy visualization
-- Win/loss tracking with P&L recording
-- Consistent strategy categorization with Options Trading Calendar
+> "The difference between being a consistently profitable trader and a struggling one often comes down to psychology and risk management." 
 
-### Stock Rating Dashboard
+## Why We Created This App
+
+Trading is as much about managing your mental state as it is about market analysis. This app was born from the real experiences of traders who know that:
+
+- Emotional states dramatically affect trading decisions
+- Position sizing needs to adapt to your mental condition
+- FOMO can lead to devastating losses
+- Having a structured approach to trading psychology is essential
+
+## Core Features
+
+### 📊 Daily Risk Assessment Dashboard
+- **Psychological State Tracking**: Gauge your emotional state, FOMO level, and market bias
+- **Smart Position Sizing**: Get data-driven recommendations on position size based on your current mental state
+- **Warning Flags**: Automatic alerts for potential euphoria, revenge trading, or FOMO
+- **Trading Psychology Guidelines**: Built-in reminders of essential trading psychology principles
+
+![Risk Assessment](https://placeholder-for-risk-screenshot.png)
+
+### 📝 Trading Journal
+- Document trades with emotional context
+- Track win/loss ratios and P&L
+- Reflect on lessons learned
+- Build self-awareness by connecting emotions to trading outcomes
+
+### 📅 Options Trading Calendar
+- Visualize your options strategies by expiration week
+- Color-coded strategy organization
+- Multi-sector trade planning
+- Comprehensive options strategy selection
+
+### 📈 Stock Rating Dashboard
 - Market and sector sentiment tracking
 - Individual stock ratings
 - Chart pattern identification
-- Sector-specific analysis
 - Historical ratings view
 
-### Options Trading Calendar
-- Visual calendar of options trades by expiration week
-- Color-coded strategy visualization
-- Multi-sector trade organization
-- Trade entry and management
-- Strategy guide with visual indicators
-- Complete options strategy selection including:
-  - Basic strategies (Long/Short Calls and Puts)
-  - Income strategies (Covered Calls and Cash-Secured Puts)
-  - Advanced strategies (Spreads, Iron Condors, Butterflies)
+## Getting Started
 
-## Installation
+1. **Download and Install**: Grab the latest version from the releases page
+2. **Daily Assessment**: Start each trading day with a quick psychological self-assessment
+3. **Follow the Guidance**: Use the position sizing recommendations to structure your trades
+4. **Journal and Reflect**: Record your trades and emotions to build self-awareness
+5. **Improve Over Time**: Use the analytics to track your psychological progress
 
-### Windows
-1. Download the latest installer (`options-risk-management-setup-x.x.x.exe`) from the releases page
+## Key Benefits
+
+- **Trade with appropriate size**: Avoid overtrading on your worst days
+- **Recognize dangerous patterns**: Catch yourself before making emotional mistakes
+- **Build consistency**: Develop a structured approach to trading psychology
+- **Trade more confidently**: Know that your decisions are backed by self-awareness
+- **Protect your capital**: The first rule of trading is to preserve your ability to trade tomorrow
+
+---
+
+## Technical Details and Development Information
+
+### Installation
+
+#### Windows
+1. Download the latest installer (`stonk-risk-management-setup-x.x.x.exe`) from the releases page
 2. Run the installer and follow the on-screen instructions
 3. Launch the application from the Start menu or desktop shortcut
 
-### Building from Source
+#### Building from Source
 To build the application from source, you'll need:
 - Go 1.18 or higher
 - Node.js 16 or higher
@@ -56,15 +83,8 @@ Clone the repository and run:
 wails build
 ```
 
-## Usage
-
-### Getting Started
-1. Start with the Risk Management Dashboard to assess your daily trading psychology
-2. Use the Stock Rating Dashboard to identify trading opportunities
-3. Plan and visualize your trades with the Options Trading Calendar
-
 ### Data Storage
-All your data is stored locally in `~/.options-risk-management` directory.
+All your data is stored locally in `~/.stonk-risk-management` directory.
 
 ### Supported Options Strategies
 The application supports a comprehensive range of options trading strategies, including:
@@ -93,15 +113,15 @@ The application supports a comprehensive range of options trading strategies, in
 - Call Ratio Spread - Neutral to moderately bearish with naked call exposure (more short than long options)
 - Put Ratio Spread - Neutral to moderately bullish with naked put exposure (more short than long options)
 
-## Development
+### Development
 
-### Prerequisites
+#### Prerequisites
 - Go 1.18+
 - Node.js 16+
 - Wails CLI
 - Svelte knowledge
 
-### Dev Environment
+#### Dev Environment
 Run the development server with:
 ```
 wails dev
@@ -147,8 +167,23 @@ When working with dates between JavaScript frontend and Go backend:
 
 These solutions address common issues with time.Time unmarshalling errors in Go and date comparison mismatches in JavaScript.
 
+## Troubleshooting
+
+If you encounter any issues with the application:
+
+1. **Check the logs**: Logs are stored in `~/.stonk-risk-management/logs`
+2. **Restart the application**: Many issues can be resolved with a simple restart
+3. **File an issue**: If problems persist, file an issue on the GitHub repository with:
+   - The exact steps to reproduce the problem
+   - Any error messages you received
+   - Your operating system and app version
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
 ## License
 MIT
 
 ## Credits
-Created by [Your Name]
+Created with ❤️ for traders who understand that psychology is the key to consistent profitability.
