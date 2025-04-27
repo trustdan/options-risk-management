@@ -1,6 +1,10 @@
 # Options Trading Dashboard
 
 ![image](https://github.com/user-attachments/assets/9a56ba9f-fb22-42a8-b858-21f61950ca3f)
+![image](https://github.com/user-attachments/assets/f02570ce-eb9b-436d-8f1b-1eab6bad20e1)
+![image](https://github.com/user-attachments/assets/3047d2cf-5620-438d-9f66-cd5c446eb3f2)
+![image](https://github.com/user-attachments/assets/eba31f1e-aafa-44ca-913f-fd46f8b82acb)
+![image](https://github.com/user-attachments/assets/30a4cbbe-c098-4c20-9000-ee4a92f0075e)
 
 
 ## Trade With Confidence Through Better Psychology
