@@ -3,6 +3,13 @@
   import { GetStockRatings, SaveStockRating, DeleteStockRating } from '../../../wailsjs/go/main/App';
   import { models } from '../../../wailsjs/go/models';
   
+  // Import components for the analytics views
+  import MarketAnalytics from './MarketAnalytics.svelte';
+  import StockAnalytics from './StockAnalytics.svelte';
+  
+  // Active tab state
+  let activeTab = 'rating'; // 'rating', 'marketAnalytics', or 'stockAnalytics'
+  
   // Sample sectors
   const sectors = [
     'Basic Materials',
@@ -50,6 +57,7 @@
   let availableDates = [];
   let currentDateIndex = 0;
   let allRatingsByDate = {};
+  let allRatings = []; // Store all ratings for analytics
   
   // For tracking save status
   let saveFeedback = {
@@ -71,6 +79,9 @@
       console.log("Loaded ratings:", ratings);
       
       if (ratings && ratings.length > 0) {
+        // Store all ratings for analytics
+        allRatings = ratings;
+        
         // Group by date to show the most recent
         allRatingsByDate = groupByDate(ratings);
         availableDates = Object.keys(allRatingsByDate).sort();
@@ -411,6 +422,9 @@
       const ratings = await GetStockRatings();
       console.log('Refreshed ratings data from API:', ratings);
       
+      // Update all ratings for analytics
+      allRatings = ratings;
+      
       allRatingsByDate = groupByDate(ratings);
       availableDates = Object.keys(allRatingsByDate).sort();
       
@@ -619,279 +633,307 @@
   
   <p class="description">Rate market conditions, sectors, and individual stocks to identify the best trading opportunities.</p>
   
-  <div class="date-navigation">
+  <!-- Tabs for navigation between different views -->
+  <div class="tabs">
     <button 
-      class="nav-button" 
-      on:click={() => navigateDate(-1)}
-      disabled={currentDateIndex <= 0}
+      class:active={activeTab === 'rating'} 
+      on:click={() => activeTab = 'rating'}
     >
-      ← Previous Day
+      Rating Form
     </button>
-    <div class="current-date">{formattedDate}</div>
     <button 
-      class="nav-button" 
-      on:click={() => navigateDate(1)}
-      disabled={currentDateIndex >= availableDates.length - 1}
+      class:active={activeTab === 'marketAnalytics'} 
+      on:click={() => activeTab = 'marketAnalytics'}
     >
-      Next Day →
+      Market Analytics
+    </button>
+    <button 
+      class:active={activeTab === 'stockAnalytics'} 
+      on:click={() => activeTab = 'stockAnalytics'}
+    >
+      Stock Analytics
     </button>
   </div>
   
-  {#if availableDates.length <= 1}
-    <div class="help-message">
-      <p>No historical data to navigate. Save some ratings to enable navigation.</p>
-      <button class="debug-btn" on:click={createDummyRating}>Create Test Rating</button>
-    </div>
-  {/if}
-  
-  <!-- Market & Sectors Section (Top) -->
-  <div class="market-sectors-container">
-    <div class="date-picker">
-      <label>Rating Date:</label>
-      <input type="date" bind:value={rating.date} />
+  {#if activeTab === 'rating'}
+    <div class="date-navigation">
+      <button 
+        class="nav-button" 
+        on:click={() => navigateDate(-1)}
+        disabled={currentDateIndex <= 0}
+      >
+        ← Previous Day
+      </button>
+      <div class="current-date">{formattedDate}</div>
+      <button 
+        class="nav-button" 
+        on:click={() => navigateDate(1)}
+        disabled={currentDateIndex >= availableDates.length - 1}
+      >
+        Next Day →
+      </button>
     </div>
     
-    <div class="section-header">
-      <h3>Market & Sectors</h3>
-      <button class="save-all-btn" on:click={saveAllSectorRatings}>Save All Ratings</button>
-    </div>
-    
-    <!-- Overall Market Rating -->
-    <div class="market-rating-box">
-      <div class="market-header">
-        <h4>Overall Market: {marketRatings.overall}</h4>
-        <button class="save-sector-btn" on:click={() => saveMarketRating()}>
-          Save {#if saveFeedback.market}<span class="feedback">{saveFeedback.market}</span>{/if}
-        </button>
+    {#if availableDates.length <= 1}
+      <div class="help-message">
+        <p>No historical data to navigate. Save some ratings to enable navigation.</p>
+        <button class="debug-btn" on:click={createDummyRating}>Create Test Rating</button>
       </div>
-      <input 
-        type="range" 
-        min="-3" 
-        max="3" 
-        step="1" 
-        bind:value={marketRatings.overall}
-      />
-      <div class="scale-labels">
-        <span>Bearish (-3)</span>
-        <span>Bullish (+3)</span>
-      </div>
-    </div>
+    {/if}
     
-    <!-- Sector Ratings Grid -->
-    <div class="sectors-grid">
-      {#each sectors as sector}
-        <div class="sector-box">
-          <div class="sector-header">
-            <h4>{sector}: {marketRatings.sectorRatings[sector]}</h4>
-            <button class="save-sector-btn" on:click={() => saveSectorRating(sector, null)}>
-              Save {#if saveFeedback.sectors[sector]}<span class="feedback">{saveFeedback.sectors[sector]}</span>{/if}
-            </button>
-          </div>
-          <input 
-            type="range" 
-            min="-3" 
-            max="3" 
-            step="1" 
-            bind:value={marketRatings.sectorRatings[sector]}
-          />
-          <div class="scale-labels small">
-            <span>Bearish (-3)</span>
-            <span>Bullish (+3)</span>
-          </div>
+    <!-- Market & Sectors Section (Top) -->
+    <div class="market-sectors-container">
+      <div class="date-picker">
+        <label>Rating Date:</label>
+        <input type="date" bind:value={rating.date} />
+      </div>
+      
+      <div class="section-header">
+        <h3>Market & Sectors</h3>
+        <button class="save-all-btn" on:click={saveAllSectorRatings}>Save All Ratings</button>
+      </div>
+      
+      <!-- Overall Market Rating -->
+      <div class="market-rating-box">
+        <div class="market-header">
+          <h4>Overall Market: {marketRatings.overall}</h4>
+          <button class="save-sector-btn" on:click={() => saveMarketRating()}>
+            Save {#if saveFeedback.market}<span class="feedback">{saveFeedback.market}</span>{/if}
+          </button>
         </div>
-      {/each}
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={marketRatings.overall}
+        />
+        <div class="scale-labels">
+          <span>Bearish (-3)</span>
+          <span>Bullish (+3)</span>
+        </div>
+      </div>
+      
+      <!-- Sector Ratings Grid -->
+      <div class="sectors-grid">
+        {#each sectors as sector}
+          <div class="sector-box">
+            <div class="sector-header">
+              <h4>{sector}: {marketRatings.sectorRatings[sector]}</h4>
+              <button class="save-sector-btn" on:click={() => saveSectorRating(sector, null)}>
+                Save {#if saveFeedback.sectors[sector]}<span class="feedback">{saveFeedback.sectors[sector]}</span>{/if}
+              </button>
+            </div>
+            <input 
+              type="range" 
+              min="-3" 
+              max="3" 
+              step="1" 
+              bind:value={marketRatings.sectorRatings[sector]}
+            />
+            <div class="scale-labels small">
+              <span>Bearish (-3)</span>
+              <span>Bullish (+3)</span>
+            </div>
+          </div>
+        {/each}
+      </div>
     </div>
-  </div>
-  
-  <!-- Individual Stock Rating Section (Bottom) -->
-  <div class="stock-rating-container">
-    <h3>Individual Stock Rating</h3>
     
-    <div class="stock-rating-content">
-      <div class="stock-rating-left">
-        <div class="input-group">
-          <label>Ticker Symbol:</label>
-          <input 
-            type="text" 
-            placeholder="e.g., AAPL" 
-            bind:value={rating.symbol}
-          />
+    <!-- Individual Stock Rating Section (Bottom) -->
+    <div class="stock-rating-container">
+      <h3>Individual Stock Rating</h3>
+      
+      <div class="stock-rating-content">
+        <div class="stock-rating-left">
+          <div class="input-group">
+            <label>Ticker Symbol:</label>
+            <input 
+              type="text" 
+              placeholder="e.g., AAPL" 
+              bind:value={rating.symbol}
+            />
+          </div>
+          
+          <div class="slider-group">
+            <h4>Stock Sentiment: {rating.stockSentiment}</h4>
+            <input 
+              type="range" 
+              min="-3" 
+              max="3" 
+              step="1" 
+              bind:value={rating.stockSentiment}
+            />
+            <div class="scale-labels">
+              <span>Bearish (-3)</span>
+              <span>Bullish (+3)</span>
+            </div>
+          </div>
         </div>
         
-        <div class="slider-group">
-          <h4>Stock Sentiment: {rating.stockSentiment}</h4>
-          <input 
-            type="range" 
-            min="-3" 
-            max="3" 
-            step="1" 
-            bind:value={rating.stockSentiment}
-          />
-          <div class="scale-labels">
-            <span>Bearish (-3)</span>
-            <span>Bullish (+3)</span>
+        <div class="stock-rating-right">
+          <div class="input-group">
+            <label>Primary Sector:</label>
+            <select bind:value={rating.sector}>
+              <option value="">Select primary sector...</option>
+              {#each sectors as sector}
+                <option value={sector}>{sector}</option>
+              {/each}
+            </select>
+          </div>
+          
+          <div class="input-group">
+            <label>Chart Patterns:</label>
+            <div class="pattern-selection">
+              <select bind:value={rating.selectedPattern}>
+                <option value="">Select a pattern...</option>
+                <optgroup label="Candlestick Patterns">
+                  <option value="Bullish Engulfing">Bullish Engulfing</option>
+                  <option value="Bearish Engulfing">Bearish Engulfing</option>
+                  <option value="Morning Star">Morning Star</option>
+                  <option value="Evening Star">Evening Star</option>
+                  <option value="Hammer">Hammer</option>
+                  <option value="Shooting Star">Shooting Star</option>
+                  <option value="Doji">Doji</option>
+                  <option value="Harami">Harami</option>
+                  <option value="Three White Soldiers">Three White Soldiers</option>
+                  <option value="Three Black Crows">Three Black Crows</option>
+                  <option value="Piercing Line">Piercing Line</option>
+                  <option value="Dark Cloud Cover">Dark Cloud Cover</option>
+                </optgroup>
+                <optgroup label="Chart Formations">
+                  <option value="Bull Flag">Bull Flag</option>
+                  <option value="Bear Flag">Bear Flag</option>
+                  <option value="Cup & Handle">Cup & Handle</option>
+                  <option value="Double Bottom">Double Bottom</option>
+                  <option value="Double Top">Double Top</option>
+                  <option value="Ascending Triangle">Ascending Triangle</option>
+                  <option value="Descending Triangle">Descending Triangle</option>
+                  <option value="Rounding Bottom">Rounding Bottom</option>
+                  <option value="Falling Wedge">Falling Wedge</option>
+                  <option value="Rising Wedge">Rising Wedge</option>
+                  <option value="Pennant">Pennant</option>
+                  <option value="Rectangle">Rectangle</option>
+                  <option value="Diamond">Diamond</option>
+                  <option value="Triple Top">Triple Top</option>
+                  <option value="Triple Bottom">Triple Bottom</option>
+                  <option value="Island Reversal">Island Reversal</option>
+                </optgroup>
+                <optgroup label="Moving Average Signals">
+                  <option value="Golden Cross">Golden Cross</option>
+                  <option value="Death Cross">Death Cross</option>
+                  <option value="20-day MA cross of 50-day MA">20-day MA cross of 50-day MA</option>
+                  <option value="Price above 200-day MA">Price above 200-day MA</option>
+                  <option value="Price below 200-day MA">Price below 200-day MA</option>
+                  <option value="Price above 50-day MA">Price above 50-day MA</option>
+                  <option value="Price below 50-day MA">Price below 50-day MA</option>
+                  <option value="Triple Moving Average Cross">Triple Moving Average Cross</option>
+                </optgroup>
+              </select>
+              <button class="add-pattern-btn" on:click={addChartPattern}>Add Pattern</button>
+              <button class="info-btn" on:click={() => togglePatternCheatSheet()}>Pattern Reference</button>
+            </div>
+            
+            {#if rating.chartPatterns.length > 0}
+              <div class="selected-patterns">
+                <h5>Selected Patterns:</h5>
+                <div class="pattern-tags">
+                  {#each rating.chartPatterns as pattern}
+                    <div class="pattern-tag">
+                      {pattern}
+                      <button class="remove-tag" on:click={() => removeChartPattern(pattern)}>×</button>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+          
+          <div class="slider-group">
+            <h4>Estimated Enthusiasm: {rating.enthusiasm}</h4>
+            <input 
+              type="range" 
+              min="0" 
+              max="10" 
+              step="1" 
+              bind:value={rating.enthusiasm}
+            />
           </div>
         </div>
       </div>
       
-      <div class="stock-rating-right">
-        <div class="input-group">
-          <label>Primary Sector:</label>
-          <select bind:value={rating.sector}>
-            <option value="">Select primary sector...</option>
-            {#each sectors as sector}
-              <option value={sector}>{sector}</option>
-            {/each}
-          </select>
-        </div>
-        
-        <div class="input-group">
-          <label>Chart Patterns:</label>
-          <div class="pattern-selection">
-            <select bind:value={rating.selectedPattern}>
-              <option value="">Select a pattern...</option>
-              <optgroup label="Candlestick Patterns">
-                <option value="Bullish Engulfing">Bullish Engulfing</option>
-                <option value="Bearish Engulfing">Bearish Engulfing</option>
-                <option value="Morning Star">Morning Star</option>
-                <option value="Evening Star">Evening Star</option>
-                <option value="Hammer">Hammer</option>
-                <option value="Shooting Star">Shooting Star</option>
-                <option value="Doji">Doji</option>
-                <option value="Harami">Harami</option>
-                <option value="Three White Soldiers">Three White Soldiers</option>
-                <option value="Three Black Crows">Three Black Crows</option>
-                <option value="Piercing Line">Piercing Line</option>
-                <option value="Dark Cloud Cover">Dark Cloud Cover</option>
-              </optgroup>
-              <optgroup label="Chart Formations">
-                <option value="Bull Flag">Bull Flag</option>
-                <option value="Bear Flag">Bear Flag</option>
-                <option value="Cup & Handle">Cup & Handle</option>
-                <option value="Double Bottom">Double Bottom</option>
-                <option value="Double Top">Double Top</option>
-                <option value="Ascending Triangle">Ascending Triangle</option>
-                <option value="Descending Triangle">Descending Triangle</option>
-                <option value="Rounding Bottom">Rounding Bottom</option>
-                <option value="Falling Wedge">Falling Wedge</option>
-                <option value="Rising Wedge">Rising Wedge</option>
-                <option value="Pennant">Pennant</option>
-                <option value="Rectangle">Rectangle</option>
-                <option value="Diamond">Diamond</option>
-                <option value="Triple Top">Triple Top</option>
-                <option value="Triple Bottom">Triple Bottom</option>
-                <option value="Island Reversal">Island Reversal</option>
-              </optgroup>
-              <optgroup label="Moving Average Signals">
-                <option value="Golden Cross">Golden Cross</option>
-                <option value="Death Cross">Death Cross</option>
-                <option value="20-day MA cross of 50-day MA">20-day MA cross of 50-day MA</option>
-                <option value="Price above 200-day MA">Price above 200-day MA</option>
-                <option value="Price below 200-day MA">Price below 200-day MA</option>
-                <option value="Price above 50-day MA">Price above 50-day MA</option>
-                <option value="Price below 50-day MA">Price below 50-day MA</option>
-                <option value="Triple Moving Average Cross">Triple Moving Average Cross</option>
-              </optgroup>
-            </select>
-            <button class="add-pattern-btn" on:click={addChartPattern}>Add Pattern</button>
-            <button class="info-btn" on:click={() => togglePatternCheatSheet()}>Pattern Reference</button>
-          </div>
-          
-          {#if rating.chartPatterns.length > 0}
-            <div class="selected-patterns">
-              <h5>Selected Patterns:</h5>
-              <div class="pattern-tags">
-                {#each rating.chartPatterns as pattern}
-                  <div class="pattern-tag">
-                    {pattern}
-                    <button class="remove-tag" on:click={() => removeChartPattern(pattern)}>×</button>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-        
-        <div class="slider-group">
-          <h4>Estimated Enthusiasm: {rating.enthusiasm}</h4>
-          <input 
-            type="range" 
-            min="0" 
-            max="10" 
-            step="1" 
-            bind:value={rating.enthusiasm}
-          />
-        </div>
+      <div class="buttons-row">
+        <button class="reset-btn" on:click={resetForm}>Reset</button>
+        <button class="save-btn" on:click={saveStockRating}>Save Stock Rating</button>
       </div>
     </div>
     
-    <div class="buttons-row">
-      <button class="reset-btn" on:click={resetForm}>Reset</button>
-      <button class="save-btn" on:click={saveStockRating}>Save Stock Rating</button>
-    </div>
-  </div>
-  
-  <!-- Recent Ratings Section (Optional, can be commented out if not needed) -->
-  <div class="recent-ratings">
-    <h3>Recent Stock Ratings</h3>
-    <div class="ratings-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Symbol</th>
-            <th>Sector</th>
-            <th>Sentiment</th>
-            <th>Patterns</th>
-            <th>Enthusiasm</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#if recentRatings.length > 0}
-            {#each recentRatings.filter(r => r.symbol && r.symbol !== 'SECTOR' && r.symbol !== 'MARKET') as item}
-              <tr>
-                <td>{item.symbol}</td>
-                <td>{item.sector}</td>
-                <td class={item.stockSentiment > 0 ? 'positive' : item.stockSentiment < 0 ? 'negative' : 'neutral'}>
-                  {item.stockSentiment > 0 ? '+' : ''}{item.stockSentiment}
-                </td>
-                <td>
-                  {#if item.chartPattern}
-                    <!-- Handle data format with comma-separated patterns -->
-                    <div class="pattern-list">
-                      {#each item.chartPattern.split(', ').filter(p => p.trim() !== '') as pattern}
-                        <span class="pattern-pill">{pattern}</span>
-                      {/each}
-                    </div>
-                  {:else}
-                    -
-                  {/if}
-                </td>
-                <td>{item.enthusiasm !== undefined ? item.enthusiasm : 0}/10</td>
-                <td class="action-buttons">
-                  <button class="edit-btn" on:click={() => editRating(item)}>Edit</button>
-                  <button class="delete-btn" on:click={() => {
-                    console.log('Delete clicked for item:', item);
-                    console.log('ID to delete:', item.id);
-                    if (item.idd && !item.id) {
-                      console.log('Found idd property instead of id:', item.idd);
-                      deleteRating(item.idd);
-                    } else {
-                      deleteRating(item.id);
-                    }
-                  }}>Delete</button>
-                </td>
-              </tr>
-            {/each}
-          {:else}
+    <!-- Recent Ratings Section (Optional, can be commented out if not needed) -->
+    <div class="recent-ratings">
+      <h3>Recent Stock Ratings</h3>
+      <div class="ratings-table">
+        <table>
+          <thead>
             <tr>
-              <td colspan="6">No ratings available for this date</td>
+              <th>Symbol</th>
+              <th>Sector</th>
+              <th>Sentiment</th>
+              <th>Patterns</th>
+              <th>Enthusiasm</th>
+              <th>Actions</th>
             </tr>
-          {/if}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {#if recentRatings.length > 0}
+              {#each recentRatings.filter(r => r.symbol && r.symbol !== 'SECTOR' && r.symbol !== 'MARKET') as item}
+                <tr>
+                  <td>{item.symbol}</td>
+                  <td>{item.sector}</td>
+                  <td class={item.stockSentiment > 0 ? 'positive' : item.stockSentiment < 0 ? 'negative' : 'neutral'}>
+                    {item.stockSentiment > 0 ? '+' : ''}{item.stockSentiment}
+                  </td>
+                  <td>
+                    {#if item.chartPattern}
+                      <!-- Handle data format with comma-separated patterns -->
+                      <div class="pattern-list">
+                        {#each item.chartPattern.split(', ').filter(p => p.trim() !== '') as pattern}
+                          <span class="pattern-pill">{pattern}</span>
+                        {/each}
+                      </div>
+                    {:else}
+                      -
+                    {/if}
+                  </td>
+                  <td>{item.enthusiasm !== undefined ? item.enthusiasm : 0}/10</td>
+                  <td class="action-buttons">
+                    <button class="edit-btn" on:click={() => editRating(item)}>Edit</button>
+                    <button class="delete-btn" on:click={() => {
+                      console.log('Delete clicked for item:', item);
+                      console.log('ID to delete:', item.id);
+                      if (item.idd && !item.id) {
+                        console.log('Found idd property instead of id:', item.idd);
+                        deleteRating(item.idd);
+                      } else {
+                        deleteRating(item.id);
+                      }
+                    }}>Delete</button>
+                  </td>
+                </tr>
+              {/each}
+            {:else}
+              <tr>
+                <td colspan="6">No ratings available for this date</td>
+              </tr>
+            {/if}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  {:else if activeTab === 'marketAnalytics'}
+    <MarketAnalytics ratings={allRatings} />
+  {:else if activeTab === 'stockAnalytics'}
+    <StockAnalytics ratings={allRatings} />
+  {/if}
 </div>
 
 <div class="chart-patterns-cheatsheet" class:visible={showPatternCheatSheet}>
@@ -1630,5 +1672,37 @@
   
   .edit-btn:hover, .delete-btn:hover {
     opacity: 0.9;
+  }
+  
+  .tabs {
+    display: flex;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .tabs button {
+    background: none;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: var(--text-color);
+  }
+  
+  .tabs button.active {
+    font-weight: bold;
+    border-bottom: 3px solid var(--active-button);
+    color: var(--active-button);
+  }
+  
+  .placeholder {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
 </style> 
