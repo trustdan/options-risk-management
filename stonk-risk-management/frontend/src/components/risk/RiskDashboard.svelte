@@ -541,6 +541,10 @@
         </div>
         <p class="slider-desc">How is your general trading mindset today? Are you feeling "in the zone" or experiencing bad vibes?</p>
       </div>
+      
+      <div class="button-row">
+        <button class="save-btn" on:click={saveAssessment}>Save Assessment</button>
+      </div>
     </div>
     
     <div class="guidelines">
