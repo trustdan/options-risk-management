@@ -9,6 +9,8 @@ export function DeleteStockRating(arg1:string):Promise<void>;
 
 export function DeleteTrade(arg1:string):Promise<void>;
 
+export function GetPositionSettings():Promise<models.PositionSettings>;
+
 export function GetRiskAssessments():Promise<Array<models.RiskAssessment>>;
 
 export function GetStockRatings():Promise<Array<models.StockRating>>;
@@ -20,6 +22,8 @@ export function GetTrades():Promise<Array<models.Trade>>;
 export function Greet(arg1:string):Promise<string>;
 
 export function RunDatabaseMaintenance():Promise<string>;
+
+export function SavePositionSettings(arg1:models.PositionSettings):Promise<void>;
 
 export function SaveRiskAssessment(arg1:models.RiskAssessment):Promise<void>;
 

@@ -14,6 +14,10 @@ export function DeleteTrade(arg1) {
   return window['go']['main']['App']['DeleteTrade'](arg1);
 }
 
+export function GetPositionSettings() {
+  return window['go']['main']['App']['GetPositionSettings']();
+}
+
 export function GetRiskAssessments() {
   return window['go']['main']['App']['GetRiskAssessments']();
 }
@@ -36,6 +40,10 @@ export function Greet(arg1) {
 
 export function RunDatabaseMaintenance() {
   return window['go']['main']['App']['RunDatabaseMaintenance']();
+}
+
+export function SavePositionSettings(arg1) {
+  return window['go']['main']['App']['SavePositionSettings'](arg1);
 }
 
 export function SaveRiskAssessment(arg1) {

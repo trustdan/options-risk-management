@@ -59,18 +59,49 @@
       const latestAssessment = assessments[index];
       currentIndex = index;
       
-      // Make sure we include all required properties with defaults if missing
+      // Default values for the extended fields
+      let physicalScore = 0;
+      let plImpactScore = 0;
+      let otherScore = 0;
+      let userNotes = '';
+      
+      // Try to parse extra data from notes
+      if (latestAssessment.notes) {
+        try {
+          const parsedData = JSON.parse(latestAssessment.notes);
+          if (parsedData && typeof parsedData === 'object') {
+            // Extract extra data if available
+            if (parsedData.extraData) {
+              physicalScore = parsedData.extraData.physicalScore || 0;
+              plImpactScore = parsedData.extraData.plImpactScore || 0;
+              otherScore = parsedData.extraData.otherScore || 0;
+            }
+            
+            // Extract user notes if available
+            userNotes = parsedData.userNotes || '';
+          } else {
+            // If not in our expected format, use as plain notes
+            userNotes = latestAssessment.notes;
+          }
+        } catch (e) {
+          // Not valid JSON, use as plain notes
+          console.log('Notes is not valid JSON, using as plain text');
+          userNotes = latestAssessment.notes;
+        }
+      }
+      
+      // Update the assessment object
       assessment = {
         id: latestAssessment.id || '',
         date: new Date(latestAssessment.date).toISOString().split('T')[0],
         emotionalScore: latestAssessment.emotionalScore || 0,
         fomoScore: latestAssessment.fomoScore || 0,
         biasScore: latestAssessment.biasScore || 0,
-        physicalScore: latestAssessment.physicalScore || 0,
-        plImpactScore: latestAssessment.plImpactScore || 0,
-        otherScore: latestAssessment.otherScore || 0,
+        physicalScore: physicalScore,
+        plImpactScore: plImpactScore,
+        otherScore: otherScore,
         overallScore: latestAssessment.overallScore || 0,
-        notes: latestAssessment.notes || ''
+        notes: userNotes
       };
       
       calculateRecommendedSize();
@@ -227,20 +258,28 @@
       // Import the RiskAssessment model
       const { models } = await import('../../../wailsjs/go/models');
       
+      // Format date as RFC3339 string (ISO format that Go expects)
+      const formattedDate = assessment.date + 'T00:00:00Z';
+      
+      // Store the extra fields and user notes in a structured format
+      const combinedData = {
+        userNotes: assessment.notes,
+        extraData: {
+          physicalScore: assessment.physicalScore,
+          plImpactScore: assessment.plImpactScore,
+          otherScore: assessment.otherScore
+        }
+      };
+      
       // Create a new assessment using the model's createFrom method
       const assessmentData = models.RiskAssessment.createFrom({
         id: isEditingSameDay() ? assessment.id : '',
-        date: new Date(assessment.date),
+        date: formattedDate,
         emotionalScore: assessment.emotionalScore,
         fomoScore: assessment.fomoScore,
         biasScore: assessment.biasScore,
-        // These fields exist in our UI but not in the Go model
-        // We'll keep them in our local state but not send them to Go
-        // physicalScore: assessment.physicalScore,
-        // plImpactScore: assessment.plImpactScore,
-        // otherScore: assessment.otherScore,
         overallScore: assessment.overallScore,
-        notes: assessment.notes
+        notes: JSON.stringify(combinedData)
       });
       
       // Use the proper API method to save the assessment
@@ -269,7 +308,7 @@
       alert('Assessment saved successfully');
     } catch (error) {
       console.error('Failed to save assessment:', error);
-      alert('Failed to save assessment: ' + error.message);
+      alert('Failed to save assessment: ' + error);
     }
   }
   
@@ -501,10 +540,6 @@
           <span>Zen/In the Zone (+3)</span>
         </div>
         <p class="slider-desc">How is your general trading mindset today? Are you feeling "in the zone" or experiencing bad vibes?</p>
-      </div>
-      
-      <div class="button-row">
-        <button class="save-btn" on:click={saveAssessment}>Save Assessment</button>
       </div>
     </div>
     
@@ -773,27 +808,6 @@
     opacity: 0.8;
   }
   
-  .button-row {
-    display: flex;
-    justify-content: center;
-    margin-top: 2rem;
-  }
-  
-  .save-btn {
-    background-color: var(--primary-button);
-    color: white;
-    border: none;
-    padding: 0.75rem 2rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.2s;
-  }
-  
-  .save-btn:hover {
-    opacity: 0.9;
-  }
-  
   .recommendation {
     background-color: var(--card-bg);
     padding: 1.5rem;
@@ -953,5 +967,26 @@
     .guidelines-grid {
       grid-template-columns: 1fr;
     }
+  }
+  
+  .button-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+  
+  .save-btn {
+    background-color: var(--primary-button);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+  
+  .save-btn:hover {
+    opacity: 0.9;
   }
 </style> 

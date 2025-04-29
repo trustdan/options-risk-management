@@ -16,11 +16,12 @@ import (
 
 // App struct
 type App struct {
-	ctx             context.Context
-	db              *database.DB
-	riskRepository  *database.RiskRepository
-	stockRepository *database.StockRepository
-	tradeRepository *database.TradeRepository
+	ctx                context.Context
+	db                 *database.DB
+	riskRepository     *database.RiskRepository
+	stockRepository    *database.StockRepository
+	tradeRepository    *database.TradeRepository
+	positionRepository *database.PositionRepository
 }
 
 // NewApp creates a new App application struct
@@ -49,6 +50,7 @@ func (a *App) startup(ctx context.Context) {
 	a.riskRepository = database.NewRiskRepository(db)
 	a.stockRepository = database.NewStockRepository(db)
 	a.tradeRepository = database.NewTradeRepository(db)
+	a.positionRepository = database.NewPositionRepository(db)
 }
 
 // shutdown is called when the app is closing
@@ -137,4 +139,14 @@ func (a *App) RunDatabaseMaintenance() string {
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
+}
+
+// GetPositionSettings returns the saved position settings
+func (a *App) GetPositionSettings() (*models.PositionSettings, error) {
+	return a.positionRepository.GetSettings()
+}
+
+// SavePositionSettings saves the position settings
+func (a *App) SavePositionSettings(settings *models.PositionSettings) error {
+	return a.positionRepository.SaveSettings(settings)
 }

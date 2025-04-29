@@ -1,5 +1,37 @@
 export namespace models {
 	
+	export class PositionSettings {
+	    accountValue: number;
+	    accountRiskPerTrade: number;
+	    maxPortfolioExposure: number;
+	    stopLossPercent: number;
+	    riskRewardRatio: number;
+	    dailyLossLimit: number;
+	    weeklyLossLimit: number;
+	    positionScaling: number;
+	    correlationAdjustment: number;
+	    volatilityMultiplier: number;
+	    maxDrawdownTolerance: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PositionSettings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.accountValue = source["accountValue"];
+	        this.accountRiskPerTrade = source["accountRiskPerTrade"];
+	        this.maxPortfolioExposure = source["maxPortfolioExposure"];
+	        this.stopLossPercent = source["stopLossPercent"];
+	        this.riskRewardRatio = source["riskRewardRatio"];
+	        this.dailyLossLimit = source["dailyLossLimit"];
+	        this.weeklyLossLimit = source["weeklyLossLimit"];
+	        this.positionScaling = source["positionScaling"];
+	        this.correlationAdjustment = source["correlationAdjustment"];
+	        this.volatilityMultiplier = source["volatilityMultiplier"];
+	        this.maxDrawdownTolerance = source["maxDrawdownTolerance"];
+	    }
+	}
 	export class RiskAssessment {
 	    id: string;
 	    date: time.Time;
