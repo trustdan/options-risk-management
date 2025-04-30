@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import RiskDashboard from './components/risk/RiskDashboard.svelte';
   import StockDashboard from './components/stock/StockDashboard.svelte';
   import TradeCalendar from './components/trade/TradeCalendar.svelte';
@@ -113,9 +114,222 @@ Warning: This will overwrite any existing data in the application. Make a backup
     }, 500);
   }
   
-  // On mount, set the initial theme
-  import { onMount } from 'svelte';
+  // VIM-style keyboard navigation
+  function handleKeydown(event) {
+    // Don't capture keyboard events when user is typing in inputs or textareas
+    // or when modifier keys are pressed (Ctrl, Alt, Shift, Meta)
+    if (event.target.tagName === 'INPUT' || 
+        event.target.tagName === 'TEXTAREA' || 
+        event.target.isContentEditable ||
+        event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) {
+      return;
+    }
+    
+    // If in link selection mode, handle key accordingly
+    if (isLinkSelectionMode) {
+      handleLinkSelectionKey(event.key.toLowerCase());
+      event.preventDefault();
+      return;
+    }
+    
+    // VIM-style navigation keys
+    switch(event.key) {
+      case 'h': // left
+        // Navigate to previous tab or element or scroll left
+        window.scrollBy(-50, 0);
+        break;
+      case 'j': // down (correcting the request, since 'h' can't be both left and down)
+        window.scrollBy(0, 50);
+        break;
+      case 'k': // up
+        window.scrollBy(0, -50);
+        break;
+      case 'l': // right
+        window.scrollBy(50, 0);
+        break;
+      case 'u': // page up
+        window.scrollBy(0, -window.innerHeight * 0.9);
+        break;
+      case 'd': // page down
+        window.scrollBy(0, window.innerHeight * 0.9);
+        break;
+      case 'f': // Enter link selection mode (vimium-style)
+        enterLinkSelectionMode();
+        break;
+      case 'Escape': // Exit link selection mode
+        exitLinkSelectionMode();
+        break;
+      default:
+        // Do nothing for other keys
+        return;
+    }
+    
+    // Prevent default behavior for these keys
+    event.preventDefault();
+  }
   
+  // Variables for link selection mode
+  let isLinkSelectionMode = false;
+  let linkHints = [];
+  let currentHintKeys = '';
+  
+  // Enter link selection mode
+  function enterLinkSelectionMode() {
+    if (isLinkSelectionMode) return;
+    
+    isLinkSelectionMode = true;
+    linkHints = [];
+    currentHintKeys = '';
+    
+    // Find all clickable elements
+    const clickableElements = document.querySelectorAll('a, button, [role="button"], [onclick], .nav-button, .data-btn, .theme-toggle');
+    
+    if (clickableElements.length === 0) {
+      isLinkSelectionMode = false;
+      return;
+    }
+    
+    // Generate hints for each clickable element
+    const hintKeys = generateHintKeys(clickableElements.length);
+    
+    // Create and position hint overlays
+    clickableElements.forEach((element, index) => {
+      if (isElementVisible(element)) {
+        const hint = createHintElement(hintKeys[index], element);
+        linkHints.push({
+          element,
+          key: hintKeys[index],
+          hintElement: hint
+        });
+        document.body.appendChild(hint);
+      }
+    });
+  }
+  
+  // Exit link selection mode
+  function exitLinkSelectionMode() {
+    if (!isLinkSelectionMode) return;
+    
+    isLinkSelectionMode = false;
+    currentHintKeys = '';
+    
+    // Remove all hint elements
+    linkHints.forEach(hint => {
+      if (hint.hintElement && hint.hintElement.parentNode) {
+        hint.hintElement.parentNode.removeChild(hint.hintElement);
+      }
+    });
+    
+    linkHints = [];
+  }
+  
+  // Handle key press in link selection mode
+  function handleLinkSelectionKey(key) {
+    if (!isLinkSelectionMode) return;
+    
+    // Exit on Escape
+    if (key === 'escape') {
+      exitLinkSelectionMode();
+      return;
+    }
+    
+    // Only accept lowercase letters a-z
+    if (!/^[a-z]$/.test(key)) {
+      return;
+    }
+    
+    // Append the key to current hint keys
+    currentHintKeys += key;
+    
+    // Check if we have a match
+    const match = linkHints.find(hint => hint.key === currentHintKeys);
+    if (match) {
+      // "Click" the element
+      match.element.click();
+      exitLinkSelectionMode();
+      return;
+    }
+    
+    // Check if we have potential matches (hints that start with currentHintKeys)
+    const potentialMatches = linkHints.filter(hint => hint.key.startsWith(currentHintKeys));
+    if (potentialMatches.length === 0) {
+      // No potential matches, reset
+      exitLinkSelectionMode();
+    }
+  }
+  
+  // Generate hint keys (a, b, c, ... z, aa, ab, etc.)
+  function generateHintKeys(count) {
+    const keys = [];
+    const chars = 'asdfghjklqwertyuiopzxcvbnm';
+    
+    // For first 26 elements, use single character
+    for (let i = 0; i < Math.min(count, chars.length); i++) {
+      keys.push(chars[i]);
+    }
+    
+    // For additional elements, use two characters
+    if (count > chars.length) {
+      let i = chars.length;
+      let firstCharIndex = 0;
+      let secondCharIndex = 0;
+      
+      while (i < count) {
+        keys.push(chars[firstCharIndex] + chars[secondCharIndex]);
+        secondCharIndex++;
+        
+        if (secondCharIndex === chars.length) {
+          secondCharIndex = 0;
+          firstCharIndex++;
+          
+          if (firstCharIndex === chars.length) {
+            break; // We've run out of combinations
+          }
+        }
+        i++;
+      }
+    }
+    
+    return keys;
+  }
+  
+  // Create a hint element to display next to a clickable element
+  function createHintElement(key, targetElement) {
+    const rect = targetElement.getBoundingClientRect();
+    const hintEl = document.createElement('div');
+    
+    hintEl.className = 'vim-hint';
+    hintEl.textContent = key;
+    hintEl.style.position = 'absolute';
+    hintEl.style.left = `${window.scrollX + rect.left}px`;
+    hintEl.style.top = `${window.scrollY + rect.top}px`;
+    hintEl.style.zIndex = '10000';
+    hintEl.style.background = 'var(--primary-button)';
+    hintEl.style.color = 'white';
+    hintEl.style.padding = '2px 4px';
+    hintEl.style.borderRadius = '2px';
+    hintEl.style.fontSize = '12px';
+    hintEl.style.fontWeight = 'bold';
+    hintEl.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+    hintEl.style.pointerEvents = 'none'; // Don't interfere with clicks
+    
+    return hintEl;
+  }
+  
+  // Check if an element is visible
+  function isElementVisible(element) {
+    const rect = element.getBoundingClientRect();
+    return (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+  }
+  
+  // On mount, set the initial theme
   onMount(() => {
     if (isDarkMode) {
       WindowSetDarkTheme();
@@ -123,6 +337,9 @@ Warning: This will overwrite any existing data in the application. Make a backup
     } else {
       WindowSetLightTheme();
     }
+    
+    // Add event listener for keyboard navigation
+    window.addEventListener('keydown', handleKeydown);
     
     // Load the Buy Me A Coffee script
     const script = document.createElement('script');
@@ -143,6 +360,11 @@ Warning: This will overwrite any existing data in the application. Make a backup
     fontLink.rel = 'stylesheet';
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Cookie&display=swap';
     document.head.appendChild(fontLink);
+    
+    // Clean up event listener when component is destroyed
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
   });
 </script>
 

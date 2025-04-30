@@ -1,6 +1,8 @@
 module stonk-risk-management
 
-go 1.23
+go 1.22.0
+
+toolchain go1.22.3
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.5
