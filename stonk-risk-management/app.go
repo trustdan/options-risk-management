@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"stonk-risk-management/pkg/database"
@@ -93,6 +94,88 @@ func (a *App) SaveStockRating(rating *models.StockRating) error {
 // DeleteStockRating deletes a stock rating
 func (a *App) DeleteStockRating(id string) error {
 	return a.stockRepository.Delete(id)
+}
+
+// GetLatestMarketRating returns the most recent market rating
+func (a *App) GetLatestMarketRating() (*models.StockRating, error) {
+	// Get all ratings for the "MARKET" symbol
+	ratings, err := a.stockRepository.GetBySymbol("MARKET")
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch market ratings: %w", err)
+	}
+
+	// If no ratings found, return nil
+	if len(ratings) == 0 {
+		return nil, nil
+	}
+
+	// Sort by date (descending) to get the most recent one
+	sort.Slice(ratings, func(i, j int) bool {
+		return ratings[i].Date.After(ratings[j].Date)
+	})
+
+	// Return the first (most recent) rating
+	return ratings[0], nil
+}
+
+// GetLatestSectorRating returns the most recent rating for a specific sector
+func (a *App) GetLatestSectorRating(sector string) (*models.StockRating, error) {
+	if sector == "" {
+		return nil, fmt.Errorf("sector cannot be empty")
+	}
+
+	// Get all ratings
+	allRatings, err := a.stockRepository.GetAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch ratings: %w", err)
+	}
+
+	// Filter for sector ratings (where symbol is "SECTOR" and sector matches)
+	var sectorRatings []*models.StockRating
+	for _, rating := range allRatings {
+		if rating.Symbol == "SECTOR" && rating.Sector == sector {
+			sectorRatings = append(sectorRatings, rating)
+		}
+	}
+
+	// If no ratings found, return nil
+	if len(sectorRatings) == 0 {
+		return nil, nil
+	}
+
+	// Sort by date (descending) to get the most recent one
+	sort.Slice(sectorRatings, func(i, j int) bool {
+		return sectorRatings[i].Date.After(sectorRatings[j].Date)
+	})
+
+	// Return the first (most recent) rating
+	return sectorRatings[0], nil
+}
+
+// GetLatestStockRating returns the most recent rating for a specific stock symbol
+func (a *App) GetLatestStockRating(symbol string) (*models.StockRating, error) {
+	if symbol == "" {
+		return nil, fmt.Errorf("symbol cannot be empty")
+	}
+
+	// Get all ratings for the provided symbol
+	ratings, err := a.stockRepository.GetBySymbol(symbol)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch ratings for symbol %s: %w", symbol, err)
+	}
+
+	// If no ratings found, return nil
+	if len(ratings) == 0 {
+		return nil, nil
+	}
+
+	// Sort by date (descending) to get the most recent one
+	sort.Slice(ratings, func(i, j int) bool {
+		return ratings[i].Date.After(ratings[j].Date)
+	})
+
+	// Return the first (most recent) rating
+	return ratings[0], nil
 }
 
 // GetTrades returns all trades

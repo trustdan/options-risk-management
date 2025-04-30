@@ -1,5 +1,5 @@
 ﻿#define MyAppName "Options Trading Dashboard"
-#define MyAppVersion "0.1.7"
+#define MyAppVersion "0.1.8"
 #define MyAppPublisher "Options Trading Dashboard"
 #define MyAppURL "https://github.com/yourusername/options-trading-dashboard"
 #define MyAppExeName "options-trading-dashboard.exe"

@@ -9,6 +9,12 @@ export function DeleteStockRating(arg1:string):Promise<void>;
 
 export function DeleteTrade(arg1:string):Promise<void>;
 
+export function GetLatestMarketRating():Promise<models.StockRating>;
+
+export function GetLatestSectorRating(arg1:string):Promise<models.StockRating>;
+
+export function GetLatestStockRating(arg1:string):Promise<models.StockRating>;
+
 export function GetPositionSettings():Promise<models.PositionSettings>;
 
 export function GetRiskAssessments():Promise<Array<models.RiskAssessment>>;

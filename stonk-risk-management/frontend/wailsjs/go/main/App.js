@@ -14,6 +14,18 @@ export function DeleteTrade(arg1) {
   return window['go']['main']['App']['DeleteTrade'](arg1);
 }
 
+export function GetLatestMarketRating() {
+  return window['go']['main']['App']['GetLatestMarketRating']();
+}
+
+export function GetLatestSectorRating(arg1) {
+  return window['go']['main']['App']['GetLatestSectorRating'](arg1);
+}
+
+export function GetLatestStockRating(arg1) {
+  return window['go']['main']['App']['GetLatestStockRating'](arg1);
+}
+
 export function GetPositionSettings() {
   return window['go']['main']['App']['GetPositionSettings']();
 }

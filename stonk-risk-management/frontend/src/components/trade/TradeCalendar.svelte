@@ -4,7 +4,11 @@
   import {
     GetTrades,
     SaveTrade,
-    DeleteTrade
+    DeleteTrade,
+    // Assume these exist or will be created in Go
+    GetLatestMarketRating, 
+    GetLatestSectorRating,
+    GetLatestStockRating
   } from '../../../wailsjs/go/main/App';
   import { models } from '../../../wailsjs/go/models';
   
@@ -211,6 +215,12 @@
   // For search/filter
   let searchQuery = '';
   let searchType = 'ticker';
+  
+  // State for displaying ratings in the form
+  let marketRating = null;
+  let sectorRating = null;
+  let stockRating = null;
+  let ratingsLoading = { market: false, sector: false, stock: false };
   
   // Filtered trades for history display
   $: filteredTrades = trades
@@ -739,9 +749,399 @@
     }
   }
 
+  // --- Rating Fetching ---
+  async function fetchLatestMarketRating() {
+    ratingsLoading.market = true;
+    marketRating = null; // Reset
+    try {
+      marketRating = await GetLatestMarketRating();
+      console.log("Market rating fetched:", marketRating);
+      calculateSyntheticRating(); // Recalculate synthetic rating
+    } catch (error) {
+      console.error('Failed to fetch market rating:', error);
+      marketRating = { error: 'Failed to load' }; // Indicate error
+    } finally {
+      ratingsLoading.market = false;
+    }
+  }
+
+  async function handleSectorChange(event) {
+    const selectedSector = event.target.value;
+    sectorRating = null; // Reset
+    stockRating = null; // Also reset stock rating if sector changes
+    if (!selectedSector) {
+      calculateSyntheticRating(); // Recalculate even when clearing
+      return; // No sector selected
+    }
+
+    ratingsLoading.sector = true;
+    try {
+      sectorRating = await GetLatestSectorRating(selectedSector);
+      console.log("Sector rating fetched:", sectorRating);
+      // Auto-set sector in the form if it was changed via dropdown
+      if (newTrade.sector !== selectedSector) {
+          newTrade.sector = selectedSector;
+      }
+      calculateSyntheticRating(); // Recalculate synthetic rating
+    } catch (error) {
+      console.error('Failed to fetch sector rating:', error);
+      sectorRating = { error: 'Failed to load' };
+    } finally {
+      ratingsLoading.sector = false;
+    }
+  }
+
+  // Add a local error state variable instead of trying to add properties to stockRating
+  let stockRatingError = null;
+
+  async function handleTickerBlur(event) {
+    const currentTicker = event.target.value.toUpperCase().trim(); // Use uppercase ticker and trim whitespace
+    if (!currentTicker) {
+      stockRating = null; // Reset
+      stockRatingError = null; // Reset error state too
+      calculateSyntheticRating(); // Recalculate even when clearing
+      return; // No ticker entered
+    }
+    
+    // Don't reset stockRating right away to prevent flickering
+    ratingsLoading.stock = true;
+    stockRatingError = null; // Reset error state
+    
+    try {
+      // Attempt to fetch the stock rating
+      const rating = await GetLatestStockRating(currentTicker);
+      console.log("Stock rating fetched:", rating);
+      
+      // Check if we got a valid rating
+      if (rating && typeof rating.stockSentiment === 'number') {
+        // Valid rating received
+        stockRating = rating;
+        
+        // If a rating is found and sector is empty or doesn't match, update form sector
+        if (rating.sector && (!newTrade.sector || newTrade.sector !== rating.sector)) {
+          newTrade.sector = rating.sector;
+          // Fetch sector rating as well if we auto-filled it
+          await handleSectorChange({ target: { value: rating.sector } });
+        } else {
+          calculateSyntheticRating(); // Recalculate synthetic rating
+        }
+      } else {
+        // No data or invalid data
+        stockRating = null;
+        stockRatingError = {
+          message: 'No rating found',
+          ticker: currentTicker
+        };
+        calculateSyntheticRating();
+      }
+    } catch (error) {
+      console.error('Failed to fetch stock rating:', error);
+      stockRating = null;
+      stockRatingError = {
+        message: 'Failed to load',
+        ticker: currentTicker
+      };
+      calculateSyntheticRating();
+    } finally {
+      ratingsLoading.stock = false;
+    }
+  }
+
+  // Add a refresh function for stock ratings
+  async function refreshStockRating() {
+    if (!newTrade.ticker) return;
+    
+    const ticker = newTrade.ticker.toUpperCase().trim();
+    ratingsLoading.stock = true;
+    stockRating = null; // Clear the current rating
+    stockRatingError = null; // Reset error state
+    
+    try {
+      // Attempt to fetch the stock rating
+      const rating = await GetLatestStockRating(ticker);
+      console.log("Stock rating refreshed:", rating);
+      
+      if (rating && typeof rating.stockSentiment === 'number') {
+        stockRating = rating;
+        calculateSyntheticRating();
+      } else {
+        stockRatingError = {
+          message: 'No rating found after refresh',
+          ticker: ticker
+        };
+        calculateSyntheticRating();
+      }
+    } catch (error) {
+      console.error('Failed to refresh stock rating:', error);
+      stockRatingError = {
+        message: 'Failed to refresh',
+        ticker: ticker
+      };
+      calculateSyntheticRating();
+    } finally {
+      ratingsLoading.stock = false;
+    }
+  }
+
+  // Synthetic rating calculation
+  let syntheticRating = null;
+  let recommendedStrategies = null;
+  
+  function calculateSyntheticRating() {
+    // Reset
+    syntheticRating = null;
+    recommendedStrategies = null;
+    
+    // Check if we have at least one valid rating
+    const hasMarket = marketRating && !marketRating.error && typeof marketRating.stockSentiment === 'number';
+    const hasSector = sectorRating && !sectorRating.error && typeof sectorRating.stockSentiment === 'number';
+    const hasStock = stockRating && !stockRating.error && typeof stockRating.stockSentiment === 'number';
+    
+    if (!hasMarket && !hasSector && !hasStock) {
+      return; // No data for calculation
+    }
+    
+    // Weights for each component
+    const marketWeight = 0.5;
+    const sectorWeight = 0.3;
+    const stockWeight = 0.2;
+    
+    // Total weights (adjust if some ratings are missing)
+    let totalWeight = 0;
+    let weightedSum = 0;
+    
+    // Add each available rating with its weight
+    if (hasMarket) {
+      weightedSum += marketRating.stockSentiment * marketWeight;
+      totalWeight += marketWeight;
+    }
+    
+    if (hasSector) {
+      weightedSum += sectorRating.stockSentiment * sectorWeight;
+      totalWeight += sectorWeight;
+    }
+    
+    if (hasStock) {
+      weightedSum += stockRating.stockSentiment * stockWeight;
+      totalWeight += stockWeight;
+    }
+    
+    // Normalize to account for missing ratings
+    if (totalWeight > 0) {
+      // Calculate the final weighted value
+      const weightedValue = weightedSum / totalWeight;
+      
+      // Set synthetic rating with additional info
+      syntheticRating = {
+        value: weightedValue,
+        numericValue: Math.round(weightedValue * 10) / 10, // Round to 1 decimal place
+        components: {
+          market: hasMarket ? marketRating.stockSentiment : null,
+          sector: hasSector ? sectorRating.stockSentiment : null,
+          stock: hasStock ? stockRating.stockSentiment : null
+        },
+        weights: {
+          market: hasMarket ? marketWeight : 0,
+          sector: hasSector ? sectorWeight : 0,
+          stock: hasStock ? stockWeight : 0
+        }
+      };
+      
+      // After calculating synthetic rating, get recommended strategies
+      recommendedStrategies = getRecommendedStrategies(syntheticRating.numericValue);
+    }
+  }
+  
+  // Function to get recommended strategies based on synthetic rating
+  function getRecommendedStrategies(rating) {
+    if (rating === null || rating === undefined) return null;
+    
+    // Define the strategy groups based on rating ranges
+    if (rating > 2.0 && rating <= 3.0) {
+      return {
+        sentiment: "Very Bullish",
+        color: "blue",
+        colorCode: "#4299E1", // blue-500
+        indicatorEmoji: "🔵",
+        strategies: [
+          { name: "Long Calls", ratio: "1:3 or better", description: "highly favorable payoff" },
+          { name: "Bull Call Spread", ratio: "1:2 to 1:4", description: "capped upside, controlled downside" },
+          { name: "Bull Put Spread (Credit Spread)", ratio: "2:1 to 4:1", description: "high probability credit strategy" },
+          { name: "Covered Call", ratio: "1:1 to 2:1", description: "income-driven strategy with limited upside" },
+          { name: "Cash Secured Puts", ratio: "2:1 to 3:1", description: "higher probability, moderate reward" },
+          { name: "Long Synthetic Stock", ratio: "1:3 or better", description: "similar payoff to outright stock" },
+          { name: "Call Ratio Backspread", ratio: "1:3 or better", description: "high upside, explosive moves" }
+        ]
+      };
+    }
+    else if (rating > 1.0 && rating <= 2.0) {
+      return {
+        sentiment: "Moderately Bullish",
+        color: "green",
+        colorCode: "#48BB78", // green-500
+        indicatorEmoji: "🟢",
+        strategies: [
+          { name: "Covered Call", ratio: "1:1 to 2:1", description: "consistent, steady returns" },
+          { name: "Cash Secured Puts", ratio: "2:1 to 3:1", description: "moderate return with higher probability" },
+          { name: "Bull Call Spread", ratio: "1:1 to 1:3", description: "balanced approach" },
+          { name: "Bull Put Spread", ratio: "2:1 to 3:1", description: "credit-driven, moderate reward" },
+          { name: "Collar", ratio: "1:1 to 1:2", description: "protective strategy, conservative gains" },
+          { name: "Diagonal Call Spreads", ratio: "1:2 to 1:4", description: "moderate directional bet, limited risk" }
+        ]
+      };
+    }
+    else if (rating >= -0.5 && rating <= 0.5) {
+      return {
+        sentiment: "Neutral",
+        color: "gray",
+        colorCode: "#718096", // gray-600
+        indicatorEmoji: "⚫",
+        strategies: [
+          { name: "Iron Condors", ratio: "3:1 to 5:1", description: "high probability, capped reward" },
+          { name: "Butterflies", ratio: "1:4 to 1:8", description: "low probability, high reward at specific price" },
+          { name: "Short Straddles/Strangles", ratio: "2:1 to 4:1", description: "income-driven, moderate risk" },
+          { name: "Calendar Spreads", ratio: "1:2 to 1:5", description: "time-decay and volatility sensitive" }
+        ]
+      };
+    }
+    else if (rating > 0.5 && rating <= 1.0) {
+      return {
+        sentiment: "Neutral to Mildly Bullish",
+        color: "white",
+        colorCode: "#A0AEC0", // gray-400 (light for white)
+        indicatorEmoji: "⚪",
+        strategies: [
+          { name: "Iron Condors", ratio: "3:1 to 5:1", description: "high probability, capped reward" },
+          { name: "Put Credit Spreads", ratio: "2:1 to 4:1", description: "consistent small gains" },
+          { name: "Call Credit Spreads", ratio: "2:1 to 4:1", description: "income-focused, slight bearish bias" },
+          { name: "Covered Calls (conservative strike)", ratio: "1:1 to 2:1", description: "steady, income-oriented" },
+          { name: "Calendar/Diagonal Spreads", ratio: "1:2 to 1:4", description: "range-bound, volatility plays" },
+          { name: "Long Stock with Protective Put", ratio: "1:1 to 1:2", description: "safety over high return" }
+        ]
+      };
+    }
+    else if (rating >= -1.5 && rating < -0.5) {
+      return {
+        sentiment: "Moderately Bearish",
+        color: "orange",
+        colorCode: "#ED8936", // orange-500
+        indicatorEmoji: "🟠",
+        strategies: [
+          { name: "Bear Put Spread", ratio: "1:1 to 1:3", description: "moderate directional play" },
+          { name: "Bear Call Spread", ratio: "2:1 to 4:1", description: "higher probability credit strategy" },
+          { name: "Put Calendar Spreads", ratio: "1:2 to 1:4", description: "mild bearish bias, volatility sensitive" },
+          { name: "Long Puts", ratio: "1:3 or better", description: "direct downside exposure, higher payoff" },
+          { name: "Diagonal Put Spreads", ratio: "1:2 to 1:4", description: "moderate risk, volatility-structured" }
+        ]
+      };
+    }
+    else if (rating >= -3.0 && rating < -1.5) {
+      return {
+        sentiment: "Very Bearish",
+        color: "red",
+        colorCode: "#E53E3E", // red-600
+        indicatorEmoji: "🔴",
+        strategies: [
+          { name: "Long Puts", ratio: "1:3 or better", description: "large downside gains" },
+          { name: "Bear Put Spreads", ratio: "1:2 to 1:4", description: "aggressively bearish, capped upside" },
+          { name: "Bear Call Spread", ratio: "2:1 to 4:1", description: "high probability, credit income" },
+          { name: "Short Synthetic Stock", ratio: "1:3 or better", description: "mimics short equity position" },
+          { name: "Put Ratio Backspread", ratio: "1:3 or better", description: "significant bearish move, explosive profit potential" }
+        ]
+      };
+    }
+    
+    // Fallback case for any other values
+    return null;
+  }
+  
+  // Helper function to select a strategy when clicking on a recommendation
+  function selectStrategy(strategyObj) {
+    // Extract the strategy name from the object
+    const strategyName = strategyObj.name;
+    
+    // Find the matching strategy in strategyOptions
+    let found = false;
+    
+    // Search through all categories and options
+    for (const category of strategyOptions) {
+      for (const option of category.options) {
+        // Extract the key part of the strategy name to match
+        // For example, "Bull Call Spread (conservative strikes)" -> "Bull Call Spread"
+        const simplifiedName = strategyName.split('(')[0].trim();
+        
+        if (option.name.includes(simplifiedName) || simplifiedName.includes(option.name)) {
+          // Found a match, update the trade form
+          newTrade.strategy = `${category.category} - ${option.name}`;
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+    
+    // If no exact match, try a more flexible match for common terms
+    if (!found) {
+      const strategyLower = strategyName.toLowerCase();
+      let bestMatchCategory;
+      let bestMatchOption;
+      
+      // Common generic mappings
+      if (strategyLower.includes("call spread")) {
+        bestMatchCategory = 'Vertical Spreads';
+        if (strategyLower.includes("bull")) {
+          bestMatchOption = 'Bull Call Spread';
+        } else if (strategyLower.includes("bear")) {
+          bestMatchOption = 'Bear Call Spread';
+        }
+      } else if (strategyLower.includes("put spread")) {
+        bestMatchCategory = 'Vertical Spreads';
+        if (strategyLower.includes("bull")) {
+          bestMatchOption = 'Bull Put Spread';
+        } else if (strategyLower.includes("bear")) {
+          bestMatchOption = 'Bear Put Spread';
+        }
+      } else if (strategyLower.includes("long call")) {
+        bestMatchCategory = 'Basic Spreads';
+        bestMatchOption = 'Long Call';
+      } else if (strategyLower.includes("long put")) {
+        bestMatchCategory = 'Basic Spreads';
+        bestMatchOption = 'Long Put';
+      } else if (strategyLower.includes("covered call")) {
+        bestMatchCategory = 'Basic Spreads';
+        bestMatchOption = 'Covered Call';
+      } else if (strategyLower.includes("calendar")) {
+        bestMatchCategory = 'Calendar/Horizontal Spreads';
+        if (strategyLower.includes("call")) {
+          bestMatchOption = 'Long Calendar Call Spread';
+        } else if (strategyLower.includes("put")) {
+          bestMatchOption = 'Long Calendar Put Spread';
+        }
+      } else if (strategyLower.includes("iron condor")) {
+        bestMatchCategory = 'Iron Condors/Butterflies';
+        bestMatchOption = 'Iron Condor';
+      } else if (strategyLower.includes("butterfly")) {
+        bestMatchCategory = 'Butterfly Spreads';
+        if (strategyLower.includes("call")) {
+          bestMatchOption = 'Long Call Butterfly';
+        } else if (strategyLower.includes("put")) {
+          bestMatchOption = 'Long Put Butterfly';
+        }
+      }
+      
+      // If we found a match in the common mappings
+      if (bestMatchCategory && bestMatchOption) {
+        newTrade.strategy = `${bestMatchCategory} - ${bestMatchOption}`;
+      }
+    }
+  }
+
+  // --- End Rating Fetching ---
+
   onMount(async () => {
     console.log('TradeCalendar component mounted');
     await loadTrades();
+    await fetchLatestMarketRating(); // Fetch market rating on load
     await tick();
     console.log('After tick, trades length:', trades.length);
     
@@ -852,6 +1252,103 @@
       <div class="add-trade-section">
         <h3>{isEditing ? 'Edit' : 'Add New'} Options Trade</h3>
         
+        <!-- Rating Display Area -->
+        <div class="trade-ratings-display">
+          <h4>Current Ratings:</h4>
+          <div class="rating-pills">
+            <span class="rating-pill market" class:loading={ratingsLoading.market}>
+              Market: 
+              {#if marketRating}
+                {#if marketRating.error}
+                  <span class="error">{marketRating.error}</span>
+                {:else}
+                  <strong>{marketRating.stockSentiment ?? 'N/A'}</strong> 
+                  ({new Date(marketRating.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                {/if}
+              {:else if ratingsLoading.market}
+                Loading...
+              {:else}
+                N/A
+              {/if}
+            </span>
+
+            {#if newTrade.sector}
+            <span class="rating-pill sector" class:loading={ratingsLoading.sector}>
+              Sector ({newTrade.sector}):
+              {#if sectorRating}
+                {#if sectorRating.error}
+                  <span class="error">{sectorRating.error}</span>
+                {:else}
+                 <strong>{sectorRating.stockSentiment ?? 'N/A'}</strong> 
+                 ({new Date(sectorRating.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                {/if}
+              {:else if ratingsLoading.sector}
+                Loading...
+              {:else}
+                N/A
+              {/if}
+            </span>
+            {/if}
+
+            {#if newTrade.ticker}
+            <span class="rating-pill stock" class:loading={ratingsLoading.stock}>
+              <span class="pill-content">
+                <span class="pill-title">Ticker ({newTrade.ticker.toUpperCase()}):</span>
+                {#if stockRating && !stockRatingError}
+                  <strong>{stockRating.stockSentiment ?? 'N/A'}</strong> 
+                  ({new Date(stockRating.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                {:else if stockRatingError}
+                  <span class="error">{stockRatingError.message}</span>
+                  <button 
+                    class="retry-btn" 
+                    on:click|preventDefault={refreshStockRating}
+                    disabled={ratingsLoading.stock}
+                  >
+                    Try again
+                  </button>
+                {:else if ratingsLoading.stock}
+                  Loading...
+                {:else}
+                  N/A
+                  <button 
+                    class="retry-btn" 
+                    on:click|preventDefault={refreshStockRating}
+                    disabled={ratingsLoading.stock}
+                  >
+                    Try again
+                  </button>
+                {/if}
+              </span>
+            </span>
+            {/if}
+            
+            {#if syntheticRating}
+            <span class="rating-pill synthetic">
+              <span class="pill-title">Synthetic Outlook:</span>
+              <strong>{syntheticRating.numericValue}</strong>
+              <span class="tooltip">
+                <span class="tooltip-icon">ⓘ</span>
+                <span class="tooltip-text">
+                  Weighted average: 
+                  {#if syntheticRating.components.market !== null}
+                    Market ({syntheticRating.components.market}) × 0.5
+                    {#if syntheticRating.components.sector !== null || syntheticRating.components.stock !== null} + {/if}
+                  {/if}
+                  {#if syntheticRating.components.sector !== null}
+                    Sector ({syntheticRating.components.sector}) × 0.3
+                    {#if syntheticRating.components.stock !== null} + {/if}
+                  {/if}
+                  {#if syntheticRating.components.stock !== null}
+                    Stock ({syntheticRating.components.stock}) × 0.2
+                  {/if}
+                </span>
+              </span>
+            </span>
+            {/if}
+          </div>
+        </div>
+        <!-- End Rating Display Area -->
+        
         <div class="trade-form">
           <div class="form-row">
             <div class="form-group">
@@ -876,12 +1373,24 @@
             
             <div class="form-group">
               <label>Ticker:</label>
-              <input type="text" placeholder="e.g., AAPL" bind:value={newTrade.ticker} />
+              <div class="input-with-action">
+                <input type="text" placeholder="e.g., AAPL" bind:value={newTrade.ticker} on:blur={handleTickerBlur} />
+                {#if newTrade.ticker}
+                  <button 
+                    class="refresh-rating-btn" 
+                    on:click|preventDefault={refreshStockRating}
+                    title="Refresh stock rating"
+                    disabled={ratingsLoading.stock}
+                  >
+                    {#if ratingsLoading.stock}⟳{:else}↻{/if}
+                  </button>
+                {/if}
+              </div>
             </div>
             
             <div class="form-group">
               <label>Sector:</label>
-              <select bind:value={newTrade.sector}>
+              <select bind:value={newTrade.sector} on:change={handleSectorChange}>
                 <option value="">Select a sector...</option>
                 {#each sectors as sector}
                   <option value={sector}>{sector}</option>
@@ -942,6 +1451,33 @@
               {isEditing ? 'Update Trade' : 'Save Trade'}
             </button>
           </div>
+          
+          <!-- Recommended Strategies Based on Synthetic Rating -->
+          {#if recommendedStrategies}
+          <div class="strategy-recommendations">
+            <div class="recommendation-header" style="border-color: {recommendedStrategies.colorCode};">
+              <span class="sentiment-indicator">{recommendedStrategies.indicatorEmoji}</span>
+              <h4>Recommended Strategies for {recommendedStrategies.sentiment} Outlook ({syntheticRating.numericValue})</h4>
+            </div>
+            <div class="recommended-strategies-list">
+              {#each recommendedStrategies.strategies as strategy}
+                <div class="strategy-item" 
+                     style="border-left-color: {recommendedStrategies.colorCode};"
+                     on:click={() => selectStrategy(strategy)}
+                     on:keydown={(e) => e.key === 'Enter' && selectStrategy(strategy)}
+                     tabindex="0"
+                     role="button"
+                     title="Click to select this strategy">
+                  <div class="strategy-item-left">
+                    <div class="strategy-name">{strategy.name}</div>
+                    <div class="strategy-ratio">R:R = {strategy.ratio}</div>
+                  </div>
+                  <div class="strategy-description">{strategy.description}</div>
+                </div>
+              {/each}
+            </div>
+          </div>
+          {/if}
         </div>
       </div>
       
@@ -1626,5 +2162,300 @@
   :global(body.dark-mode) button.secondary {
     background-color: #4a5568;
     color: #e2e8f0;
+  }
+
+  /* Styles for Rating Display */
+  .trade-ratings-display {
+    background-color: var(--input-bg);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+  }
+
+  .trade-ratings-display h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: inherit;
+  }
+
+  .rating-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .rating-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    background-color: var(--bg-color);
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  
+  .rating-pill.loading {
+    opacity: 0.7;
+    cursor: default;
+  }
+
+  .rating-pill strong {
+    margin: 0 0.3rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+  
+  .rating-pill .error {
+    color: #e53e3e; /* Red for errors */
+    font-style: italic;
+    margin-left: 0.3rem;
+  }
+  
+  .rating-pill.market {
+    border-color: #ECC94B; /* Gold border */
+  }
+  .rating-pill.sector {
+    border-color: #63B3ED; /* Blue border */
+  }
+  .rating-pill.stock {
+    border-color: #68D391; /* Green border */
+  }
+  
+  .rating-pill.synthetic {
+    border-color: #805AD5; /* Purple border */
+    background-color: rgba(128, 90, 213, 0.1); /* Light purple background */
+  }
+  
+  .pill-title {
+    font-weight: 500;
+    margin-right: 0.3rem;
+  }
+  
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    margin-left: 0.5rem;
+  }
+  
+  .tooltip-icon {
+    color: #718096;
+    cursor: help;
+    font-size: 0.8rem;
+  }
+  
+  .tooltip-text {
+    visibility: hidden;
+    width: 250px;
+    background-color: #4A5568;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Position above the icon */
+    left: 50%;
+    margin-left: -125px; /* Center horizontally */
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+  
+  /* Arrow for tooltip */
+  .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #4A5568 transparent transparent transparent;
+  }
+  
+  /* Show tooltip on hover */
+  .tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  /* Strategy Recommendations Styles */
+  .strategy-recommendations {
+    background-color: var(--input-bg);
+    border-radius: 4px;
+    margin-top: 1.5rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+  }
+  
+  .recommendation-header {
+    padding: 0.75rem 1rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-left: 4px solid; /* Color set via inline style */
+  }
+  
+  .recommendation-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  
+  .sentiment-indicator {
+    font-size: 1.25rem;
+  }
+  
+  .recommended-strategies-list {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .strategy-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: var(--bg-color);
+    border-radius: 4px;
+    border-left: 4px solid;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .strategy-item:hover {
+    background-color: var(--input-bg);
+  }
+  
+  .strategy-item-left {
+    flex: 0 0 30%;
+    margin-right: 1rem;
+  }
+  
+  .strategy-name {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  
+  .strategy-ratio {
+    font-size: 0.8rem;
+    color: var(--active-button);
+  }
+  
+  .strategy-description {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-left: 1px solid var(--border-color);
+    padding-left: 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    .strategy-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .strategy-item-left {
+      flex: 1 0 100%;
+      margin-bottom: 0.5rem;
+      margin-right: 0;
+    }
+    
+    .strategy-description {
+      flex: 1 0 100%;
+      border-left: none;
+      padding-left: 0;
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.5rem;
+      margin-top: 0.5rem;
+    }
+  }
+  
+  /* Dark mode adjustments */
+  :global(body.dark-mode) .strategy-recommendations {
+    background-color: rgba(45, 55, 72, 0.3);
+  }
+  
+  :global(body.dark-mode) .recommendation-header {
+    background-color: rgba(45, 55, 72, 0.5);
+  }
+  
+  :global(body.dark-mode) .strategy-item {
+    background-color: rgba(45, 55, 72, 0.8);
+  }
+
+  /* Additional styles for the refresh button */
+  .input-with-action {
+    position: relative;
+    display: flex;
+  }
+
+  .input-with-action input {
+    flex: 1;
+  }
+
+  .refresh-rating-btn {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    font-size: 1rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .refresh-rating-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: var(--active-button);
+  }
+
+  .refresh-rating-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+
+  .retry-btn {
+    background: transparent;
+    color: var(--active-button);
+    border: none;
+    padding: 0 0.25rem;
+    margin-left: 0.25rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .retry-btn:hover {
+    opacity: 0.8;
+  }
+
+  .retry-btn:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+
+  .pill-content {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
   }
 </style> 
