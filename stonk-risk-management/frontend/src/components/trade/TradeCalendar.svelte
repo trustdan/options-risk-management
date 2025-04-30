@@ -8,7 +8,8 @@
     // Assume these exist or will be created in Go
     GetLatestMarketRating, 
     GetLatestSectorRating,
-    GetLatestStockRating
+    GetLatestStockRating,
+    SaveStockRating
   } from '../../../wailsjs/go/main/App';
   import { models } from '../../../wailsjs/go/models';
   
@@ -198,6 +199,10 @@
     ticker: '',
     sector: '',
     entryPrice: 0,
+    timeframe: '',
+    entry: 0,
+    stop: 0,
+    target: 0,
     strategy: '',
     notes: '',
     shortLegExpiration: '' // New field for short leg expiration info
@@ -221,6 +226,11 @@
   let sectorRating = null;
   let stockRating = null;
   let ratingsLoading = { market: false, sector: false, stock: false };
+  
+  // For rating editing functionality
+  let showRatingEditor = false;
+  let editingRatingType = ''; // 'sector' or 'stock'
+  let editingRating = null;
   
   // Filtered trades for history display
   $: filteredTrades = trades
@@ -553,6 +563,11 @@
       type: strategyType,
       week: weekIndex + 1,
       entryPrice: parseFloat(newTrade.entryPrice.toString()),
+      // Add the new fields
+      timeframe: newTrade.timeframe,
+      entry: parseFloat(newTrade.entry.toString()),
+      stop: parseFloat(newTrade.stop.toString()),
+      target: parseFloat(newTrade.target.toString()),
       notes: newTrade.notes,
       entryDate: entryDate,
       expirationDate: expDate,
@@ -592,6 +607,10 @@
       ticker: '',
       sector: '',
       entryPrice: 0,
+      timeframe: '',
+      entry: 0,
+      stop: 0,
+      target: 0,
       strategy: '',
       notes: '',
       shortLegExpiration: ''
@@ -635,6 +654,11 @@
       ticker: trade.symbol,
       sector: trade.sector,
       entryPrice: trade.entryPrice,
+      // For the new fields, use the stored values or defaults
+      timeframe: trade.timeframe || '',
+      entry: trade.entry || trade.entryPrice || 0,
+      stop: trade.stop || 0,
+      target: trade.target || 0,
       strategy: `${trade.strategy} - ${trade.type}`,
       notes: trade.notes,
       shortLegExpiration: trade.shortLegExp || ''
@@ -990,6 +1014,21 @@
         ]
       };
     }
+    else if (rating > 0.5 && rating <= 1.0) {
+      return {
+        sentiment: "Mildly Bullish",
+        color: "teal",
+        colorCode: "#38B2AC", // teal-500
+        indicatorEmoji: "🟢",
+        strategies: [
+          { name: "Bull Put Spread", ratio: "2:1 to 4:1", description: "consistent small gains" },
+          { name: "Covered Calls (conservative strike)", ratio: "1:1 to 2:1", description: "steady, income-oriented" },
+          { name: "Cash Secured Puts", ratio: "2:1 to 3:1", description: "probability-focused approach" },
+          { name: "Long Stock with Protective Put", ratio: "1:1 to 1:2", description: "safety over high return" },
+          { name: "Bull Call Spread (wide)", ratio: "1:2 to 1:3", description: "directional bet with defined risk" }
+        ]
+      };
+    }
     else if (rating >= -0.5 && rating <= 0.5) {
       return {
         sentiment: "Neutral",
@@ -1004,23 +1043,22 @@
         ]
       };
     }
-    else if (rating > 0.5 && rating <= 1.0) {
+    else if (rating >= -1.0 && rating < -0.5) {
       return {
-        sentiment: "Neutral to Mildly Bullish",
-        color: "white",
-        colorCode: "#A0AEC0", // gray-400 (light for white)
-        indicatorEmoji: "⚪",
+        sentiment: "Mildly Bearish",
+        color: "yellow",
+        colorCode: "#D69E2E", // yellow-600
+        indicatorEmoji: "🟡",
         strategies: [
-          { name: "Iron Condors", ratio: "3:1 to 5:1", description: "high probability, capped reward" },
-          { name: "Put Credit Spreads", ratio: "2:1 to 4:1", description: "consistent small gains" },
-          { name: "Call Credit Spreads", ratio: "2:1 to 4:1", description: "income-focused, slight bearish bias" },
-          { name: "Covered Calls (conservative strike)", ratio: "1:1 to 2:1", description: "steady, income-oriented" },
-          { name: "Calendar/Diagonal Spreads", ratio: "1:2 to 1:4", description: "range-bound, volatility plays" },
-          { name: "Long Stock with Protective Put", ratio: "1:1 to 1:2", description: "safety over high return" }
+          { name: "Bear Call Spread", ratio: "2:1 to 4:1", description: "higher probability credit strategy" },
+          { name: "Put Calendar Spreads", ratio: "1:2 to 1:4", description: "mild bearish bias, volatility sensitive" },
+          { name: "Bear Put Spread (wide)", ratio: "1:2 to 1:3", description: "directional bet with defined risk" },
+          { name: "Covered Put", ratio: "1:1 to 2:1", description: "income-oriented bearish play" },
+          { name: "Bear Call Ladder", ratio: "2:1 to 3:1", description: "credit strategy with managed risk" }
         ]
       };
     }
-    else if (rating >= -1.5 && rating < -0.5) {
+    else if (rating >= -2.0 && rating < -1.0) {
       return {
         sentiment: "Moderately Bearish",
         color: "orange",
@@ -1029,13 +1067,13 @@
         strategies: [
           { name: "Bear Put Spread", ratio: "1:1 to 1:3", description: "moderate directional play" },
           { name: "Bear Call Spread", ratio: "2:1 to 4:1", description: "higher probability credit strategy" },
-          { name: "Put Calendar Spreads", ratio: "1:2 to 1:4", description: "mild bearish bias, volatility sensitive" },
           { name: "Long Puts", ratio: "1:3 or better", description: "direct downside exposure, higher payoff" },
-          { name: "Diagonal Put Spreads", ratio: "1:2 to 1:4", description: "moderate risk, volatility-structured" }
+          { name: "Diagonal Put Spreads", ratio: "1:2 to 1:4", description: "moderate risk, volatility-structured" },
+          { name: "Put Debit Spreads", ratio: "1:2 or better", description: "defined risk with directional bias" }
         ]
       };
     }
-    else if (rating >= -3.0 && rating < -1.5) {
+    else if (rating >= -3.0 && rating < -2.0) {
       return {
         sentiment: "Very Bearish",
         color: "red",
@@ -1151,6 +1189,88 @@
       trades = [...trades]; 
     }, 100);
   });
+
+  // Show the rating editor modal
+  function showEditRating(type) {
+    editingRatingType = type;
+    
+    if (type === 'sector' && sectorRating) {
+      // Create a copy of the rating to edit
+      editingRating = { ...sectorRating, stockSentiment: sectorRating.stockSentiment };
+    } else if (type === 'stock' && stockRating) {
+      // Create a copy of the rating to edit
+      editingRating = { ...stockRating, stockSentiment: stockRating.stockSentiment };
+    } else {
+      // Create a new rating if none exists
+      const today = new Date().toISOString().split('T')[0];
+      editingRating = {
+        id: '',
+        date: `${today}T00:00:00Z`,
+        symbol: type === 'sector' ? 'SECTOR' : newTrade.ticker.toUpperCase(),
+        sector: newTrade.sector,
+        stockSentiment: 0,
+        notes: ''
+      };
+    }
+    
+    showRatingEditor = true;
+  }
+  
+  // Save the edited rating
+  async function saveEditedRating() {
+    try {
+      // Get date in ISO format
+      const targetDate = new Date().toISOString().split('T')[0];
+      
+      // Create a compatible object for saving
+      const ratingData = {
+        id: editingRating.id || '',
+        date: editingRating.date || `${targetDate}T00:00:00Z`,
+        symbol: editingRatingType === 'sector' ? 'SECTOR' : newTrade.ticker.toUpperCase(),
+        sector: newTrade.sector,
+        stockSentiment: editingRating.stockSentiment,
+        priceTarget: editingRating.priceTarget || 0,
+        confidence: editingRating.confidence || 0,
+        enthusiasm: editingRating.enthusiasm || 0,
+        chartPattern: editingRating.chartPattern || '',
+        notes: editingRating.notes || ''
+      };
+      
+      // Create a proper StockRating object
+      const ratingToSave = models.StockRating.createFrom(ratingData);
+      console.log('Saving rating with explicit fields:', ratingToSave);
+      
+      await SaveStockRating(ratingToSave);
+      
+      // Close the editor
+      showRatingEditor = false;
+      
+      // Refresh the appropriate rating
+      if (editingRatingType === 'sector') {
+        sectorRating = null;
+        await handleSectorChange({ target: { value: newTrade.sector } });
+      } else if (editingRatingType === 'stock') {
+        stockRating = null;
+        if (newTrade.ticker) {
+          await refreshStockRating();
+        }
+      }
+      
+      // Recalculate synthetic rating
+      calculateSyntheticRating();
+      
+      alert('Rating updated successfully!');
+    } catch (error) {
+      console.error('Failed to save rating:', error);
+      alert('Failed to save rating: ' + error.message);
+    }
+  }
+  
+  // Cancel editing
+  function cancelEditRating() {
+    showRatingEditor = false;
+    editingRating = null;
+  }
 </script>
 
 <div class="calendar-page">
@@ -1274,19 +1394,23 @@
 
             {#if newTrade.sector}
             <span class="rating-pill sector" class:loading={ratingsLoading.sector}>
-              Sector ({newTrade.sector}):
-              {#if sectorRating}
-                {#if sectorRating.error}
-                  <span class="error">{sectorRating.error}</span>
+              <span class="pill-content">
+                <span class="pill-title">Sector ({newTrade.sector}):</span>
+                {#if sectorRating}
+                  {#if sectorRating.error}
+                    <span class="error">{sectorRating.error}</span>
+                  {:else}
+                   <strong>{sectorRating.stockSentiment ?? 'N/A'}</strong> 
+                   ({new Date(sectorRating.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                   <button class="edit-rating-btn" on:click|preventDefault={() => showEditRating('sector')}>✎</button>
+                  {/if}
+                {:else if ratingsLoading.sector}
+                  Loading...
                 {:else}
-                 <strong>{sectorRating.stockSentiment ?? 'N/A'}</strong> 
-                 ({new Date(sectorRating.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                  N/A
+                  <button class="edit-rating-btn" on:click|preventDefault={() => showEditRating('sector')}>+</button>
                 {/if}
-              {:else if ratingsLoading.sector}
-                Loading...
-              {:else}
-                N/A
-              {/if}
+              </span>
             </span>
             {/if}
 
@@ -1297,6 +1421,7 @@
                 {#if stockRating && !stockRatingError}
                   <strong>{stockRating.stockSentiment ?? 'N/A'}</strong> 
                   ({new Date(stockRating.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                  <button class="edit-rating-btn" on:click|preventDefault={() => showEditRating('stock')}>✎</button>
                 {:else if stockRatingError}
                   <span class="error">{stockRatingError.message}</span>
                   <button 
@@ -1306,6 +1431,7 @@
                   >
                     Try again
                   </button>
+                  <button class="edit-rating-btn" on:click|preventDefault={() => showEditRating('stock')}>+</button>
                 {:else if ratingsLoading.stock}
                   Loading...
                 {:else}
@@ -1317,6 +1443,7 @@
                   >
                     Try again
                   </button>
+                  <button class="edit-rating-btn" on:click|preventDefault={() => showEditRating('stock')}>+</button>
                 {/if}
               </span>
             </span>
@@ -1397,10 +1524,41 @@
                 {/each}
               </select>
             </div>
+          </div>
+          
+          <!-- New row for trade details -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>Timeframe:</label>
+              <select bind:value={newTrade.timeframe}>
+                <option value="">Select timeframe...</option>
+                <option value="1 week">1 week</option>
+                <option value="2 weeks">2 weeks</option>
+                <option value="3 weeks">3 weeks</option>
+                <option value="4 weeks">4 weeks</option>
+                <option value="5-6 weeks">5-6 weeks</option>
+                <option value="7-8 weeks">7-8 weeks</option>
+                <option value="9-10 weeks">9-10 weeks</option>
+                <option value="11-12 weeks">11-12 weeks</option>
+                <option value="3 months">3 months</option>
+                <option value="4 months">4 months</option>
+                <option value="5 months">5 months</option>
+              </select>
+            </div>
             
             <div class="form-group">
               <label>Entry Price:</label>
-              <input type="number" step="0.01" min="0" bind:value={newTrade.entryPrice} />
+              <input type="number" step="0.01" min="0" bind:value={newTrade.entry} />
+            </div>
+            
+            <div class="form-group">
+              <label>Stop Loss:</label>
+              <input type="number" step="0.01" min="0" bind:value={newTrade.stop} />
+            </div>
+            
+            <div class="form-group">
+              <label>Target Price:</label>
+              <input type="number" step="0.01" min="0" bind:value={newTrade.target} />
             </div>
           </div>
           
@@ -1424,15 +1582,6 @@
             </div>
           </div>
           
-          {#if showShortLegField}
-            <div class="form-row">
-              <div class="form-group full-width">
-                <label>Short Leg Expiration Date:</label>
-                <input type="date" bind:value={newTrade.shortLegExpiration} />
-              </div>
-            </div>
-          {/if}
-          
           <div class="form-row">
             <div class="form-group full-width">
               <label>Trade Notes:</label>
@@ -1442,6 +1591,15 @@
               ></textarea>
             </div>
           </div>
+          
+          {#if showShortLegField}
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label>Short Leg Expiration Date:</label>
+                <input type="date" bind:value={newTrade.shortLegExpiration} />
+              </div>
+            </div>
+          {/if}
           
           <div class="form-buttons">
             <button class="reset-btn" on:click={resetForm}>
@@ -1592,6 +1750,61 @@
       refreshTrades={forceRefresh}
     />
   {/if}
+  
+  <!-- Rating Editor Modal -->
+  {#if showRatingEditor}
+  <div class="modal-overlay">
+    <div class="rating-editor-modal">
+      <h3>Edit {editingRatingType === 'sector' ? 'Sector' : 'Stock'} Rating</h3>
+      
+      <div class="rating-editor-content">
+        <div class="rating-info">
+          <div class="info-row">
+            <strong>{editingRatingType === 'sector' ? 'Sector' : 'Symbol'}:</strong>
+            <span>{editingRatingType === 'sector' ? newTrade.sector : newTrade.ticker.toUpperCase()}</span>
+          </div>
+          <div class="info-row">
+            <strong>Date:</strong>
+            <span>{new Date().toLocaleDateString()}</span>
+          </div>
+        </div>
+        
+        <div class="rating-slider-container">
+          <label for="rating-value">Sentiment Rating (-3 to +3):</label>
+          <div class="sentiment-control">
+            <span class="sentiment-label negative">Bearish</span>
+            <input 
+              type="range" 
+              id="rating-value" 
+              min="-3" 
+              max="3" 
+              step="1"
+              bind:value={editingRating.stockSentiment}
+            />
+            <span class="sentiment-label positive">Bullish</span>
+          </div>
+          <div class="sentiment-value">
+            Current value: <strong>{editingRating.stockSentiment}</strong>
+          </div>
+        </div>
+        
+        <div class="rating-notes">
+          <label for="rating-notes">Notes:</label>
+          <textarea 
+            id="rating-notes" 
+            bind:value={editingRating.notes} 
+            placeholder="Add any notes about this rating..."
+          ></textarea>
+        </div>
+      </div>
+      
+      <div class="rating-editor-actions">
+        <button class="cancel-btn" on:click={cancelEditRating}>Cancel</button>
+        <button class="save-btn" on:click={saveEditedRating}>Save Rating</button>
+      </div>
+    </div>
+  </div>
+  {/if}
 </div>
 
 <style>
@@ -1703,52 +1916,66 @@
   .calendar-container {
     overflow-x: auto;
     margin-bottom: 2rem;
+    max-width: 100%;
   }
   
   .calendar {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid var(--border-color);
+    table-layout: fixed; /* Use fixed layout for better space control */
   }
   
   .sector-header {
-    width: 150px;
+    width: 120px; /* Reduce width */
     text-align: left;
     background-color: var(--bg-color);
+    padding: 0.4rem 0.5rem; /* Reduce padding */
   }
   
   .week-header {
-    min-width: 120px;
+    min-width: 100px; /* Reduce min-width */
+    max-width: 120px; /* Add max-width */
     background-color: var(--bg-color);
     text-align: center;
-    font-size: 0.9rem;
-    padding: 0.5rem;
+    font-size: 0.85rem; /* Slightly smaller font */
+    padding: 0.4rem 0.3rem; /* Reduce padding */
   }
   
   .week-label {
     font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .exp-date {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #718096;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .sector-cell {
-    padding: 0.75rem;
+    padding: 0.5rem;
     font-weight: 500;
     border: 1px solid var(--border-color);
     background-color: var(--bg-color);
+    font-size: 0.9rem; /* Slightly smaller font */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .trade-cell {
     border: 1px solid var(--border-color);
-    padding: 0.5rem;
+    padding: 0.4rem; /* Reduce padding */
     vertical-align: top;
-    height: 80px;
+    height: 70px; /* Reduce height */
     position: relative;
     overflow-y: auto;
-    max-height: 120px;
+    max-height: 110px;
   }
   
   .trade-cell.has-trades {
@@ -1756,11 +1983,11 @@
   }
   
   .trade-card {
-    padding: 0.5rem;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
+    padding: 0.35rem 0.25rem; /* Reduce padding */
+    border-radius: 3px; /* Smaller radius */
+    margin-bottom: 0.35rem; /* Smaller margin */
     color: white;
-    font-size: 0.8rem;
+    font-size: 0.75rem; /* Smaller font */
     text-align: center;
     cursor: pointer;
     transition: transform 0.1s ease-in-out;
@@ -1815,11 +2042,17 @@
   
   .trade-symbol {
     font-weight: bold;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem; /* Smaller margin */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .trade-type {
-    font-size: 0.75rem;
+    font-size: 0.7rem; /* Smaller font */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .add-trade-section {
@@ -1899,6 +2132,7 @@
     margin-top: 0.25rem;
     max-height: 80px;
     overflow-y: auto;
+    width: 120px; /* Make the dropdown skinnier */
   }
   
   .week-option {
@@ -1906,6 +2140,8 @@
     background-color: var(--bg-color);
     border-radius: 3px;
     font-size: 0.75rem;
+    white-space: nowrap;
+    text-align: center;
   }
   
   .form-buttons {
@@ -2457,5 +2693,136 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .rating-editor-modal {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+  }
+
+  .rating-editor-content {
+    margin-bottom: 2rem;
+  }
+
+  .rating-info {
+    margin-bottom: 1rem;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .rating-slider-container {
+    margin-bottom: 1rem;
+  }
+
+  .sentiment-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sentiment-label {
+    font-weight: bold;
+  }
+
+  .sentiment-label.negative {
+    color: #e53e3e;
+  }
+
+  .sentiment-label.positive {
+    color: #48BB78;
+  }
+
+  .sentiment-value {
+    font-size: 0.8rem;
+    color: #718096;
+  }
+
+  .rating-notes {
+    margin-top: 1rem;
+  }
+
+  .rating-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+
+  .cancel-btn, .save-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .cancel-btn {
+    background-color: #e53e3e;
+    color: white;
+  }
+
+  .save-btn {
+    background-color: #48BB78;
+    color: white;
+  }
+
+  .edit-rating-btn {
+    background: transparent;
+    color: var(--primary-button);
+    border: none;
+    font-size: 0.9rem;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0;
+    margin-left: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .edit-rating-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Dark mode styles for the rating editor */
+  :global(body.dark-mode) .rating-editor-modal {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+  }
+
+  :global(body.dark-mode) .rating-notes textarea {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+  }
+  
+  :global(body.dark-mode) .sentiment-value {
+    color: var(--text-secondary);
+  }
+
+  :global(body.dark-mode) input[type="range"] {
+    background-color: var(--input-bg);
   }
 </style> 
