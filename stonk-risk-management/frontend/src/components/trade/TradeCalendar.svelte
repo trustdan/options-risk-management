@@ -1348,7 +1348,7 @@
   // Function to get color based on rating value
   function getBarColor(rating) {
     // Convert rating from -3 to +3 scale to a color
-    if (rating <= -3) return '#e53e3e'; // Deep red
+    if (rating <= -3) return '#c53030'; // More subdued red for extreme negative (-3)
     if (rating <= -2) return '#f56565';
     if (rating <= -1) return '#fc8181';
     if (rating < 0) return '#feb2b2';
@@ -3010,6 +3010,8 @@
     height: 100%;
     border-radius: 10px;
     transition: width 0.3s ease, background-color 0.3s ease;
+    min-width: 35px; /* Ensure a minimum width so color is always visible */
+    opacity: 1; /* Ensure full opacity */
   }
   
   .sector-rating-value {
@@ -3020,6 +3022,7 @@
     font-size: 0.8rem;
     color: var(--text-color);
     line-height: 20px;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.5); /* Add text shadow to improve readability */
   }
 
   /* Add styles for the new add-trade-page */
@@ -3057,5 +3060,21 @@
   :global(body.dark-mode) .global-tooltip {
     background-color: #555;
     color: #eee;
+  }
+  
+  /* Dark mode adjustments for sector ratings */
+  :global(body.dark-mode) .sector-rating-bar-container {
+    background-color: rgba(30, 30, 30, 0.2);
+    border-color: var(--border-color);
+  }
+  
+  :global(body.dark-mode) .sector-rating-bar {
+    /* Preserve original colors without darkening */
+    opacity: 0.9;
+  }
+  
+  :global(body.dark-mode) .sector-rating-value {
+    color: #fff;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
   }
 </style> 

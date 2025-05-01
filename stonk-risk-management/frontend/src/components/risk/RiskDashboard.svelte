@@ -232,12 +232,14 @@
       plFactor = -45 * extremeMultiplier; // Triple impact of -15, plus extremeMultiplier
     } else if (assessment.plImpactScore === -2) {
       plFactor = -20 * moderateMultiplier; // Enhanced impact for -2
-    } else if (assessment.plImpactScore < 0) {
-      plFactor = assessment.plImpactScore * 7.5; // Normal impact for -1
+    } else if (assessment.plImpactScore === -1) {
+      plFactor = -12; // Normal impact for -1
+    } else if (assessment.plImpactScore === 0) {
+      plFactor = -3; // Slight negative for breakeven, not substantial
     } else if (assessment.plImpactScore === 1) {
       plFactor = 22.5; // Normal for +1 (peak positive)
     } else if (assessment.plImpactScore === 2) {
-      plFactor = 5 * moderateMultiplier; // Enhanced but still positive for +2 (starting to be cautious)
+      plFactor = 10 * moderateMultiplier; // Enhanced but still positive for +2 (starting to be cautious)
     } else {
       plFactor = -22.5 * extremeMultiplier; // Triple impact for +3 with multiplier
     }
