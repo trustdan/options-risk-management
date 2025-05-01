@@ -6,6 +6,7 @@
   import TradingKoans from './components/koans/TradingKoans.svelte';
   import PrivacyPolicy from './components/PrivacyPolicy.svelte';
   import VersionPopup from './components/shared/VersionPopup.svelte';
+  import KeybindingsHelp from './components/shared/KeybindingsHelp.svelte';
   import { WindowSetDarkTheme, WindowSetLightTheme } from '../wailsjs/runtime/runtime';
   import { VERSION } from './version.js';
   import { RunDatabaseMaintenance } from '../wailsjs/go/main/App';
@@ -15,6 +16,7 @@
   const version = "v" + VERSION;
   let showPrivacyPolicy = false;
   let showVersionPopup = true;
+  let showKeybindingsHelp = false;
   
   // Reference to component instances
   let riskDashboardComponent;
@@ -116,6 +118,23 @@ Warning: This will overwrite any existing data in the application. Make a backup
     }, 500);
   }
   
+  // Function to handle the '?' key specifically for showing keyboard shortcuts
+  function handleQuestionMarkKey(event) {
+    // Don't capture when user is typing in inputs or textareas
+    if (event.target.tagName === 'INPUT' || 
+        event.target.tagName === 'TEXTAREA' || 
+        event.target.isContentEditable ||
+        event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) {
+      return;
+    }
+    
+    // Show keyboard shortcuts help when '?' is pressed
+    if (event.key === '?' || (event.shiftKey && event.key === '/')) {
+      showKeybindingsHelp = true;
+      event.preventDefault();
+    }
+  }
+  
   // VIM-style keyboard navigation
   function handleKeydown(event) {
     // Don't capture keyboard events when user is typing in inputs or textareas
@@ -123,7 +142,7 @@ Warning: This will overwrite any existing data in the application. Make a backup
     if (event.target.tagName === 'INPUT' || 
         event.target.tagName === 'TEXTAREA' || 
         event.target.isContentEditable ||
-        event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) {
+        event.ctrlKey || event.altKey || event.metaKey) {
       return;
     }
     
@@ -140,7 +159,7 @@ Warning: This will overwrite any existing data in the application. Make a backup
         // Navigate to previous tab or element or scroll left
         window.scrollBy(-50, 0);
         break;
-      case 'j': // down (correcting the request, since 'h' can't be both left and down)
+      case 'j': // down
         window.scrollBy(0, 50);
         break;
       case 'k': // up
@@ -160,6 +179,9 @@ Warning: This will overwrite any existing data in the application. Make a backup
         break;
       case 'Escape': // Exit link selection mode
         exitLinkSelectionMode();
+        break;
+      case '?': // Show keyboard shortcuts
+        showKeybindingsHelp = true;
         break;
       default:
         // Do nothing for other keys
@@ -343,8 +365,12 @@ Warning: This will overwrite any existing data in the application. Make a backup
     // Ensure version popup is visible on startup
     showVersionPopup = true;
     
-    // Add event listener for keyboard navigation
+    // Add event listeners for keyboard navigation
     window.addEventListener('keydown', handleKeydown);
+    
+    // Add separate event listener specifically for the '?' key
+    // This ensures it gets captured even if other handlers don't trigger
+    window.addEventListener('keydown', handleQuestionMarkKey);
     
     // Load the Buy Me A Coffee script
     const script = document.createElement('script');
@@ -366,9 +392,10 @@ Warning: This will overwrite any existing data in the application. Make a backup
     fontLink.href = 'https://fonts.googleapis.com/css2?family=Cookie&display=swap';
     document.head.appendChild(fontLink);
     
-    // Clean up event listener when component is destroyed
+    // Clean up event listeners when component is destroyed
     return () => {
       window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('keydown', handleQuestionMarkKey);
     };
   });
 </script>
@@ -400,6 +427,9 @@ Warning: This will overwrite any existing data in the application. Make a backup
         </a>
         <button class="refresh-btn" on:click={refreshApp} title="Refresh application data">
           ↻ Refresh
+        </button>
+        <button class="kb-help-btn" on:click={() => showKeybindingsHelp = true} title="Keyboard shortcuts">
+          ⌨️
         </button>
         <button class="version-btn" on:click={() => showVersionPopup = true} title="Show version information">
           {version}
@@ -458,7 +488,8 @@ Warning: This will overwrite any existing data in the application. Make a backup
   <footer>
     <p>
       © {new Date().getFullYear()} Options Risk Management - v{VERSION} | 
-      <a href="#privacy" on:click|preventDefault={() => showPrivacyPolicy = true}>Privacy Policy</a>
+      <a href="#privacy" on:click|preventDefault={() => showPrivacyPolicy = true}>Privacy Policy</a> |
+      <a href="#keyboard" on:click|preventDefault={() => showKeybindingsHelp = true}>Keyboard Shortcuts (Press ? for help)</a>
     </p>
   </footer>
   
@@ -467,6 +498,7 @@ Warning: This will overwrite any existing data in the application. Make a backup
   {/if}
   
   <VersionPopup bind:visible={showVersionPopup} />
+  <KeybindingsHelp bind:visible={showKeybindingsHelp} />
 </main>
 
 <style>
@@ -660,6 +692,24 @@ Warning: This will overwrite any existing data in the application. Make a backup
   
   .refresh-btn:hover {
     background-color: var(--button-hover);
+  }
+  
+  .kb-help-btn {
+    background-color: transparent;
+    color: var(--header-text);
+    border: none;
+    padding: 0.5rem;
+    border-radius: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transition: background-color 0.2s;
+  }
+  
+  .kb-help-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
   
   .version-btn {
