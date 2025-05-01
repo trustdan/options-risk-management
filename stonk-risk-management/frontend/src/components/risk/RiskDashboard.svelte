@@ -42,6 +42,10 @@
   let assessments = [];
   let currentIndex = 0;
   
+  // For tracking scroll position to show/hide sticky mini-bar
+  let showStickyBar = false;
+  let mainRecommendationElement;
+  
   onMount(async () => {
     try {
       assessments = await GetRiskAssessments();
@@ -50,9 +54,20 @@
         currentIndex = assessments.length - 1;
         loadAssessmentAt(currentIndex);
       }
+      
+      // Add scroll event listener to check when to show sticky bar
+      window.addEventListener('scroll', handleScroll);
+      
+      // Update global position bar with initial value
+      updateGlobalPositionBar(positionSize);
     } catch (error) {
       console.error('Failed to load risk assessments:', error);
     }
+    
+    return () => {
+      // Clean up event listener
+      window.removeEventListener('scroll', handleScroll);
+    };
   });
   
   function loadAssessmentAt(index) {
@@ -272,6 +287,9 @@
     
     console.log(`Final position size: ${positionSize}%`);
     
+    // Update global position bar if available
+    updateGlobalPositionBar(positionSize);
+    
     // Set stay out warning flag when position size is below 30%
     showStayOutWarning = positionSize < 30;
     
@@ -283,6 +301,22 @@
       (assessment.emotionalScore + assessment.fomoScore + 
        assessment.physicalScore + assessment.plImpactScore + assessment.otherScore) / 5
     );
+  }
+  
+  // Function to update the global position bar
+  function updateGlobalPositionBar(size) {
+    // Method 1: Use the register function if available
+    // @ts-ignore - Custom property on window object
+    if (typeof window.__positionBarRegister === 'function') {
+      // @ts-ignore - Custom property on window object
+      window.__positionBarRegister(size);
+    }
+    
+    // Method 2: Dispatch a custom event for the global bar to listen to
+    const event = new CustomEvent('position-size-updated', {
+      detail: { positionSize: size }
+    });
+    window.dispatchEvent(event);
   }
   
   function updatePositionAdvice() {
@@ -413,6 +447,17 @@
   function handleSliderChange() {
     calculateRecommendedSize();
   }
+  
+  // Function to handle scroll events and toggle sticky bar
+  function handleScroll() {
+    if (!mainRecommendationElement) return;
+    
+    // Get position of main recommendation bar
+    const rect = mainRecommendationElement.getBoundingClientRect();
+    
+    // Show sticky bar when main bar is scrolled out of view
+    showStickyBar = rect.bottom < 0;
+  }
 </script>
 
 <div class="dashboard">
@@ -445,7 +490,21 @@
     
     <p class="description">Assess your daily emotional and psychological state to determine optimal position sizing.</p>
     
-    <div class="recommendation">
+    <!-- Sticky Mini Position Bar (visible when scrolling) -->
+    {#if showStickyBar}
+      <div class="sticky-mini-bar">
+        <div class="mini-position-label">Position Size:</div>
+        <div class="mini-position-bar">
+          <div 
+            class="mini-position-indicator" 
+            style="width: {positionSize}%; background-color: {positionSize >= 70 ? '#68D391' : positionSize <= 30 ? '#FC8181' : '#F6AD55'}"
+          ></div>
+        </div>
+        <div class="mini-position-value">{positionSize}%</div>
+      </div>
+    {/if}
+    
+    <div class="recommendation" bind:this={mainRecommendationElement}>
       <h2>Recommended Position Size</h2>
       <div class="position-bar">
         <div 
@@ -1185,5 +1244,52 @@
     0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); }
     70% { box-shadow: 0 0 0 10px rgba(229, 62, 62, 0); }
     100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+  }
+  
+  /* Sticky Mini Position Bar Styles */
+  .sticky-mini-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--card-bg);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    animation: slideDown 0.3s forwards;
+  }
+  
+  .mini-position-label {
+    white-space: nowrap;
+    font-weight: bold;
+  }
+  
+  .mini-position-bar {
+    flex: 1;
+    height: 20px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  .mini-position-indicator {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s, background-color 0.5s;
+  }
+  
+  .mini-position-value {
+    font-weight: bold;
+    min-width: 50px;
+    text-align: right;
+  }
+  
+  @keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
   }
 </style> 
