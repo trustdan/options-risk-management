@@ -136,6 +136,10 @@ export namespace models {
 	    legNumber: number;
 	    isMultiLeg: boolean;
 	    shortLegExp: string;
+	    timeframe: string;
+	    entry: number;
+	    stop: number;
+	    target: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Trade(source);
@@ -156,6 +160,10 @@ export namespace models {
 	        this.legNumber = source["legNumber"];
 	        this.isMultiLeg = source["isMultiLeg"];
 	        this.shortLegExp = source["shortLegExp"];
+	        this.timeframe = source["timeframe"];
+	        this.entry = source["entry"];
+	        this.stop = source["stop"];
+	        this.target = source["target"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

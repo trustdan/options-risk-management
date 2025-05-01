@@ -15,6 +15,32 @@
   
   // Import the new TradeJournal component
   import TradeJournal from './TradeJournal.svelte';
+  // Import the Tooltip component
+  import Tooltip from '../shared/Tooltip.svelte';
+  
+  // Global tooltip state
+  let tooltipVisible = false;
+  let tooltipContent = '';
+  let tooltipX = 0;
+  let tooltipY = 0;
+  
+  // Function to show tooltip
+  function showTooltip(event, trade) {
+    // Prepare tooltip content
+    tooltipContent = `Timeframe: ${trade.timeframe || 'N/A'}\nEntry: ${trade.entry || trade.entryPrice || 'N/A'}\nStop: ${trade.stop || 'N/A'}\nTarget: ${trade.target || 'N/A'}`;
+    
+    // Position tooltip near the cursor but offset to avoid obscuring it
+    tooltipX = event.clientX + 10; // Offset to the right
+    tooltipY = event.clientY - 10; // Offset slightly up
+    
+    // Show tooltip
+    tooltipVisible = true;
+  }
+  
+  // Function to hide tooltip
+  function hideTooltip() {
+    tooltipVisible = false;
+  }
   
   // Active tab for navigation
   let activeTab = 'addTrade'; // 'addTrade', 'calendar', or 'journal'
@@ -700,7 +726,16 @@
   }
   
   function handleTradeCardClick(trade) {
-    editTrade(trade.id);
+    // Hide the tooltip first
+    hideTooltip();
+    
+    // Then switch to the Add Trade tab
+    activeTab = 'addTrade';
+    
+    // Small delay to ensure the tab switch completes before editing
+    setTimeout(() => {
+      editTrade(trade.id);
+    }, 50);
   }
   
   function formatDate(date) {
@@ -1808,6 +1843,8 @@
                           class:span-end={trade.spanPosition === 'end'}
                           style="background-color: {getStrategyColor(trade.strategy)}"
                           on:click={() => handleTradeCardClick(trade)}
+                          on:mouseenter={(e) => showTooltip(e, trade)}
+                          on:mouseleave={hideTooltip}
                         >
                           <div class="trade-symbol">{trade.symbol}</div>
                           <div class="trade-type">{trade.type}</div>
@@ -1897,6 +1934,18 @@
       </div>
     </div>
   </div>
+  {/if}
+  
+  <!-- Global tooltip element for trade details -->
+  {#if tooltipVisible}
+    <div 
+      class="global-tooltip" 
+      style="left: {tooltipX}px; top: {tooltipY}px;"
+    >
+      {#each tooltipContent.split('\n') as line}
+        <div class="tooltip-line">{line}</div>
+      {/each}
+    </div>
   {/if}
 </div>
 
@@ -2066,7 +2115,6 @@
     padding: 0.4rem; /* Reduce padding */
     vertical-align: top;
     height: 70px; /* Reduce height */
-    position: relative;
     overflow-y: auto;
     max-height: 110px;
   }
@@ -2981,5 +3029,33 @@
     border-radius: 5px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Global tooltip styles */
+  .global-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    pointer-events: none; /* Don't block mouse events */
+    max-width: 250px;
+  }
+  
+  .tooltip-line {
+    margin-bottom: 4px;
+  }
+  
+  .tooltip-line:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Dark mode adjustment */
+  :global(body.dark-mode) .global-tooltip {
+    background-color: #555;
+    color: #eee;
   }
 </style> 

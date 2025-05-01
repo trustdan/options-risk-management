@@ -19,4 +19,8 @@ type Trade struct {
 	LegNumber      int       `json:"legNumber"`      // Leg number for multi-leg strategies (1 for primary leg)
 	IsMultiLeg     bool      `json:"isMultiLeg"`     // Flag indicating if this is part of a multi-leg strategy
 	ShortLegExp    string    `json:"shortLegExp"`    // Text info about short leg expiration for calendar/diagonal spreads
+	Timeframe      string    `json:"timeframe"`      // Trading timeframe (e.g., "1 week", "2 weeks")
+	Entry          float64   `json:"entry"`          // Entry price point
+	Stop           float64   `json:"stop"`           // Stop loss price
+	Target         float64   `json:"target"`         // Price target
 }
