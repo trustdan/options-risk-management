@@ -227,6 +227,17 @@
   let stockRating = null;
   let ratingsLoading = { market: false, sector: false, stock: false };
   
+  // Initialize marketRatings object for sector ratings cheat sheet 
+  let marketRatings = {
+    overall: 0,
+    sectorRatings: {}
+  };
+  
+  // Initialize sector ratings with zeros
+  sectors.forEach(sector => {
+    marketRatings.sectorRatings[sector] = 0;
+  });
+  
   // For rating editing functionality
   let showRatingEditor = false;
   let editingRatingType = ''; // 'sector' or 'stock'
@@ -1180,6 +1191,23 @@
     console.log('TradeCalendar component mounted');
     await loadTrades();
     await fetchLatestMarketRating(); // Fetch market rating on load
+    
+    // Load sector ratings for cheat sheet
+    console.log('Loading sector ratings for cheat sheet...');
+    for (const sector of sectors) {
+      try {
+        const sectorRating = await GetLatestSectorRating(sector);
+        if (sectorRating && typeof sectorRating.stockSentiment === 'number') {
+          marketRatings.sectorRatings[sector] = sectorRating.stockSentiment;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch rating for sector ${sector}:`, error);
+      }
+    }
+    
+    // Force update of marketRatings object to trigger reactivity
+    marketRatings = {...marketRatings};
+    
     await tick();
     console.log('After tick, trades length:', trades.length);
     
@@ -1270,6 +1298,39 @@
   function cancelEditRating() {
     showRatingEditor = false;
     editingRating = null;
+  }
+
+  // Helper to get sector rating value safely
+  function getSectorRating(sector) {
+    return marketRatings.sectorRatings[sector] || 0;
+  }
+  
+  // Helper to set sector rating value safely
+  function setSectorRating(sector, value) {
+    marketRatings.sectorRatings[sector] = value;
+  }
+  
+  // Function to get color based on rating value
+  function getBarColor(rating) {
+    // Convert rating from -3 to +3 scale to a color
+    if (rating <= -3) return '#e53e3e'; // Deep red
+    if (rating <= -2) return '#f56565';
+    if (rating <= -1) return '#fc8181';
+    if (rating < 0) return '#feb2b2';
+    if (rating === 0) return '#CBD5E0'; // Neutral gray
+    if (rating <= 1) return '#9AE6B4';
+    if (rating <= 2) return '#68D391';
+    return '#48BB78'; // Rich green
+  }
+  
+  // Save an individual sector rating
+  async function saveSectorRating(sector) {
+    const rating = getSectorRating(sector);
+    const newRating = prompt(`Enter new rating for ${sector} (current: ${rating}):`, rating);
+    if (newRating !== null) {
+      setSectorRating(sector, parseFloat(newRating));
+      await handleSectorChange({ target: { value: sector } });
+    }
   }
 </script>
 
@@ -1367,6 +1428,27 @@
           </tbody>
         </table>
         {/key}
+      </div>
+      
+      <!-- Add Sector Ratings Cheat Sheet after calendar and before add-trade-section -->
+      <div class="sector-ratings-cheatsheet">
+        <h3>Sector Ratings Cheat Sheet</h3>
+        <div class="sector-ratings-grid">
+          {#each sectors as sector}
+            <div class="sector-rating-item">
+              <div class="sector-name">{sector}</div>
+              <div class="sector-rating-bar-container">
+                <!-- Calculate values inline instead of using @const -->
+                <div 
+                  class="sector-rating-bar" 
+                  style="width: {((marketRatings?.sectorRatings?.[sector] || 0) + 3) / 6 * 100}%; 
+                         background-color: {getBarColor(marketRatings?.sectorRatings?.[sector] || 0)}"
+                ></div>
+                <div class="sector-rating-value">{marketRatings?.sectorRatings?.[sector] || 0}</div>
+              </div>
+            </div>
+          {/each}
+        </div>
       </div>
       
       <div class="add-trade-section">
@@ -2824,5 +2906,60 @@
 
   :global(body.dark-mode) input[type="range"] {
     background-color: var(--input-bg);
+  }
+
+  /* Sector Ratings Cheat Sheet Styles */
+  .sector-ratings-cheatsheet {
+    background-color: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  .sector-ratings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .sector-rating-item {
+    background-color: var(--bg-color);
+    padding: 0.8rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+  }
+  
+  .sector-name {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .sector-rating-bar-container {
+    height: 20px;
+    width: 100%;
+    background-color: var(--bg-color);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+  }
+  
+  .sector-rating-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+  }
+  
+  .sector-rating-value {
+    position: absolute;
+    top: 0;
+    right: 8px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: var(--text-color);
+    line-height: 20px;
   }
 </style> 
