@@ -7,6 +7,7 @@
   import PrivacyPolicy from './components/PrivacyPolicy.svelte';
   import VersionPopup from './components/shared/VersionPopup.svelte';
   import KeybindingsHelp from './components/shared/KeybindingsHelp.svelte';
+  import HelpGuide from './components/shared/HelpGuide.svelte';
   import { WindowSetDarkTheme, WindowSetLightTheme } from '../wailsjs/runtime/runtime';
   import { VERSION } from './version.js';
   import { RunDatabaseMaintenance } from '../wailsjs/go/main/App';
@@ -17,6 +18,7 @@
   let showPrivacyPolicy = false;
   let showVersionPopup = true;
   let showKeybindingsHelp = false;
+  let showHelpGuide = false;
   
   // Reference to component instances
   let riskDashboardComponent;
@@ -428,6 +430,9 @@ Warning: This will overwrite any existing data in the application. Make a backup
         <button class="refresh-btn" on:click={refreshApp} title="Refresh application data">
           ↻ Refresh
         </button>
+        <button class="help-btn" on:click={() => showHelpGuide = true} title="Help Guide">
+          ❓
+        </button>
         <button class="kb-help-btn" on:click={() => showKeybindingsHelp = true} title="Keyboard shortcuts">
           ⌨️
         </button>
@@ -489,6 +494,7 @@ Warning: This will overwrite any existing data in the application. Make a backup
     <p>
       © {new Date().getFullYear()} Options Risk Management - v{VERSION} | 
       <a href="#privacy" on:click|preventDefault={() => showPrivacyPolicy = true}>Privacy Policy</a> |
+      <a href="#help" on:click|preventDefault={() => showHelpGuide = true}>Help Guide</a> |
       <a href="#keyboard" on:click|preventDefault={() => showKeybindingsHelp = true}>Keyboard Shortcuts (Press ? for help)</a>
     </p>
   </footer>
@@ -499,6 +505,7 @@ Warning: This will overwrite any existing data in the application. Make a backup
   
   <VersionPopup bind:visible={showVersionPopup} />
   <KeybindingsHelp bind:visible={showKeybindingsHelp} />
+  <HelpGuide bind:visible={showHelpGuide} />
 </main>
 
 <style>
@@ -691,6 +698,25 @@ Warning: This will overwrite any existing data in the application. Make a backup
   }
   
   .refresh-btn:hover {
+    background-color: var(--button-hover);
+  }
+  
+  .help-btn {
+    background-color: transparent;
+    color: var(--header-text);
+    border: none;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transition: background-color 0.2s;
+    margin-left: 0.5rem;
+  }
+  
+  .help-btn:hover {
     background-color: var(--button-hover);
   }
   

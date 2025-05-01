@@ -36,6 +36,7 @@
   let showEuphoriaFlag = false;
   let showChasingFlag = false;
   let showFOMOFlag = false;
+  let showStayOutWarning = false; // Flag for the stay out of market popup
   
   // For navigation
   let assessments = [];
@@ -131,74 +132,156 @@
   function calculateRecommendedSize() {
     // Calculate individual factor contributions to position size
     
+    // Always keep bias score at 0 (neutral) since we removed the slider
+    assessment.biasScore = 0;
+    
     // Check for warning flags
     showEuphoriaFlag = assessment.emotionalScore >= 3 || assessment.plImpactScore >= 3;
     showChasingFlag = assessment.plImpactScore <= -3;
     showFOMOFlag = assessment.fomoScore >= 3;
     
+    // Count extreme ratings to apply additional multiplier if multiple extremes exist
+    let extremeRatingsCount = 0;
+    
+    if (assessment.emotionalScore <= -3 || assessment.emotionalScore >= 3) extremeRatingsCount++;
+    if (assessment.fomoScore >= 3) extremeRatingsCount++;
+    if (assessment.physicalScore <= -3) extremeRatingsCount++;
+    if (assessment.plImpactScore <= -3 || assessment.plImpactScore >= 3) extremeRatingsCount++;
+    if (assessment.otherScore <= -3) extremeRatingsCount++;
+    
+    // Define multiplier for extreme conditions - grows with multiple extreme ratings
+    const extremeMultiplier = extremeRatingsCount >= 2 ? 3 : extremeRatingsCount >= 1 ? 2 : 1;
+    
+    // Count moderate-high ratings (-2 or +2 levels)
+    let moderateHighCount = 0;
+    
+    if (assessment.emotionalScore === -2 || assessment.emotionalScore === 2) moderateHighCount++;
+    if (assessment.fomoScore === 2) moderateHighCount++; 
+    if (assessment.physicalScore === -2) moderateHighCount++;
+    if (assessment.plImpactScore === -2 || assessment.plImpactScore === 2) moderateHighCount++;
+    if (assessment.otherScore === -2) moderateHighCount++;
+    
+    // Define moderate multiplier - only applies to ratings of -2 or +2
+    const moderateMultiplier = moderateHighCount >= 2 ? 1.7 : moderateHighCount >= 1 ? 1.4 : 1;
+    
     // Emotional state: -3 (more caution), peaks at +1/+2 (less caution), +3 (more caution due to euphoria)
     let emotionalFactor;
     if (assessment.emotionalScore <= -3) {
-      emotionalFactor = -30; // Max caution for very negative
+      // Significantly increased impact for -3 emotional state to ensure visible changes
+      emotionalFactor = -45 * extremeMultiplier; // Increased from -30 to -45
+    } else if (assessment.emotionalScore === -2) {
+      emotionalFactor = -15 * moderateMultiplier; // Enhanced impact for -2
     } else if (assessment.emotionalScore <= 0) {
-      emotionalFactor = assessment.emotionalScore * 10; // Linear increase
-    } else if (assessment.emotionalScore <= 2) {
-      emotionalFactor = assessment.emotionalScore * 15; // Peak positive effect
+      emotionalFactor = assessment.emotionalScore * 5; // Normal impact for non-extreme negative
+    } else if (assessment.emotionalScore === 1) {
+      emotionalFactor = 15; // Normal impact for +1
+    } else if (assessment.emotionalScore === 2) {
+      emotionalFactor = 20; // Slightly reduced enhanced impact for +2 (still positive)
     } else {
-      emotionalFactor = 30 - (assessment.emotionalScore - 2) * 30; // Decrease for euphoria
+      emotionalFactor = -30 * extremeMultiplier; // Triple impact for +3 (euphoria) with multiplier
     }
     
     // FOMO level: -3 (peak performance, less caution), +3 (bad, more caution)
     let fomoFactor;
     if (assessment.fomoScore <= -3) {
-      fomoFactor = 30; // Max benefit at -3 (least FOMO)
+      fomoFactor = 30; // Normal impact for positive extreme
     } else if (assessment.fomoScore <= 0) {
-      fomoFactor = 30 - Math.abs(assessment.fomoScore + 3) * 10; // Decreasing benefit
+      fomoFactor = 30 - Math.abs(assessment.fomoScore + 3) * 10; // Normal curve
+    } else if (assessment.fomoScore === 1) {
+      fomoFactor = -5; // Normal impact for +1
+    } else if (assessment.fomoScore === 2) {
+      fomoFactor = -15 * moderateMultiplier; // Enhanced impact for +2
     } else {
-      fomoFactor = -assessment.fomoScore * 10; // Linear decrease for positive FOMO
+      fomoFactor = -30 * extremeMultiplier; // Triple impact for +3 FOMO with multiplier
     }
     
     // Market bias: doesn't affect position size
     const biasFactor = 0;
     
     // Physical condition: -3 (worst, more caution), +3 (best, less caution)
-    const physicalFactor = assessment.physicalScore * 10;
+    let physicalFactor;
+    if (assessment.physicalScore <= -3) {
+      // Significantly increased impact for -3 physical state to ensure visible changes
+      physicalFactor = -45 * extremeMultiplier; // Increased from -30 to -45
+    } else if (assessment.physicalScore === -2) {
+      physicalFactor = -15 * moderateMultiplier; // Enhanced impact for -2
+    } else if (assessment.physicalScore < 0) {
+      physicalFactor = assessment.physicalScore * 5; // Normal impact for -1
+    } else {
+      physicalFactor = assessment.physicalScore * 10; // Normal positive impact
+    }
     
     // Recent P&L: Peak at +1, both -3 and +3 warrant more caution
     let plFactor;
     if (assessment.plImpactScore <= -3) {
-      plFactor = -30; // Max caution for big losses
+      plFactor = -45 * extremeMultiplier; // Triple impact of -15, plus extremeMultiplier
+    } else if (assessment.plImpactScore === -2) {
+      plFactor = -20 * moderateMultiplier; // Enhanced impact for -2
     } else if (assessment.plImpactScore < 0) {
-      plFactor = assessment.plImpactScore * 10; // Linear increase toward 0
-    } else if (assessment.plImpactScore <= 1) {
-      plFactor = assessment.plImpactScore * 15; // Peak at +1
-    } else if (assessment.plImpactScore <= 2) {
-      plFactor = 15 - (assessment.plImpactScore - 1) * 10; // Decrease for +2
+      plFactor = assessment.plImpactScore * 7.5; // Normal impact for -1
+    } else if (assessment.plImpactScore === 1) {
+      plFactor = 22.5; // Normal for +1 (peak positive)
+    } else if (assessment.plImpactScore === 2) {
+      plFactor = 5 * moderateMultiplier; // Enhanced but still positive for +2 (starting to be cautious)
     } else {
-      plFactor = -15; // Significant caution for +3 (euphoria effect)
+      plFactor = -22.5 * extremeMultiplier; // Triple impact for +3 with multiplier
     }
     
     // Other (mindset): Linear relationship from -3 (bad vibes) to +3 (zen/in the zone)
-    const otherFactor = assessment.otherScore * 10;
+    let otherFactor;
+    if (assessment.otherScore <= -3) {
+      otherFactor = -30 * extremeMultiplier; // Triple impact for extremely bad vibes with multiplier
+    } else if (assessment.otherScore === -2) {
+      otherFactor = -15 * moderateMultiplier; // Enhanced impact for -2
+    } else if (assessment.otherScore < 0) {
+      otherFactor = assessment.otherScore * 5; // Normal impact for -1
+    } else {
+      otherFactor = assessment.otherScore * 10; // Normal positive impact
+    }
     
-    // Base position size plus modifying factors
-    const baseSize = 50;
+    // Log the extreme and moderate ratings and multipliers for debugging
+    console.log(`Extreme ratings: ${extremeRatingsCount}, Multiplier: ${extremeMultiplier}`);
+    console.log(`Moderate-high ratings: ${moderateHighCount}, Multiplier: ${moderateMultiplier.toFixed(2)}`);
+    console.log(`Factors - Emotional: ${emotionalFactor.toFixed(1)}, FOMO: ${fomoFactor.toFixed(1)}, Physical: ${physicalFactor.toFixed(1)}, P&L: ${plFactor.toFixed(1)}, Other: ${otherFactor.toFixed(1)}`);
+    
+    // Increased base size from 50 to 80 to make average position size higher
+    const baseSize = 80;
     positionSize = baseSize + emotionalFactor + fomoFactor + biasFactor + physicalFactor + plFactor + otherFactor;
     
-    // Ensure position size stays within bounds
-    if (positionSize < 10) positionSize = 10; // Minimum 10%
-    if (positionSize > 100) positionSize = 100; // Maximum 100%
+    // Allow position size to drop below 30% only in extreme scenarios
+    const isExtremeScenario = 
+      ((assessment.emotionalScore <= -2 || assessment.physicalScore <= -2) && assessment.fomoScore >= 2) ||
+      (assessment.plImpactScore <= -3 && assessment.fomoScore >= 2) ||
+      extremeRatingsCount >= 2 || // Also consider it extreme if multiple extreme ratings exist
+      assessment.emotionalScore <= -3 || // Always consider -3 emotional state as extreme scenario
+      assessment.physicalScore <= -3;    // Always consider -3 physical state as extreme scenario
+    
+    // If not in an extreme scenario, enforce minimum of 30%
+    if (!isExtremeScenario && positionSize < 30) {
+      positionSize = 30;
+    }
+    
+    // Lower minimum floor to better visualize differences in extreme cases
+    if (positionSize < 3) positionSize = 3; // Changed from 5% to 3% minimum
+    
+    // Maximum is still 100%
+    if (positionSize > 100) positionSize = 100;
     
     // Round to nearest integer
     positionSize = Math.round(positionSize);
+    
+    console.log(`Final position size: ${positionSize}%`);
+    
+    // Set stay out warning flag when position size is below 30%
+    showStayOutWarning = positionSize < 30;
     
     // Update position advice based on calculated size
     updatePositionAdvice();
     
     // Calculate overall score (can still be used for reference)
     assessment.overallScore = Math.round(
-      (assessment.emotionalScore + assessment.fomoScore + assessment.biasScore + 
-       assessment.physicalScore + assessment.plImpactScore + assessment.otherScore) / 6
+      (assessment.emotionalScore + assessment.fomoScore + 
+       assessment.physicalScore + assessment.plImpactScore + assessment.otherScore) / 5
     );
   }
   
@@ -221,7 +304,7 @@
           "Continue monitoring for any condition changes"
         ]
       };
-    } else if (positionSize >= 40) {
+    } else if (positionSize >= 45) {
       positionAdvice = {
         title: "Standard Trading Conditions",
         tips: [
@@ -230,7 +313,7 @@
           "Focus on higher-probability setups"
         ]
       };
-    } else if (positionSize >= 20) {
+    } else if (positionSize >= 35) {
       positionAdvice = {
         title: "Caution: Reduce Position Sizing",
         tips: [
@@ -244,7 +327,7 @@
         title: "High Risk: Minimal Trading Recommended",
         tips: [
           "Consider taking a trading break today",
-          "If trading, reduce position size by 70-90%",
+          "If trading, reduce position size by 70%",
           "Only take extremely high-probability setups"
         ]
       };
@@ -452,43 +535,6 @@
       </div>
       
       <div class="slider-group">
-        <h3>FOMO Level: {assessment.fomoScore}</h3>
-        <input 
-          type="range" 
-          min="-3" 
-          max="3" 
-          step="1" 
-          bind:value={assessment.fomoScore} 
-          on:change={handleSliderChange}
-        />
-        <div class="scale-labels">
-          <span>Low (-3)</span>
-          <span>Medium (0)</span>
-          <span>High (+3)</span>
-        </div>
-        <p class="slider-desc">How strongly are you feeling the "Fear Of Missing Out"? Higher values indicate stronger FOMO which can lead to impulsive decisions.</p>
-      </div>
-      
-      <div class="slider-group">
-        <h3>Market Bias: {assessment.biasScore}</h3>
-        <input 
-          type="range" 
-          min="-3" 
-          max="3" 
-          step="1" 
-          bind:value={assessment.biasScore} 
-          on:change={handleSliderChange}
-        />
-        <div class="scale-labels">
-          <span>Bearish (-3)</span>
-          <span>Neutral (0)</span>
-          <span>Bullish (+3)</span>
-        </div>
-        <p class="slider-desc">Are you biased toward a bearish or bullish perspective? Strong biases can affect your trading decisions.</p>
-        <p class="bias-caption">One must always be flexible. Go with the flow and check your unreasonable biases at the door.</p>
-      </div>
-      
-      <div class="slider-group">
         <h3>Physical Condition: {assessment.physicalScore}</h3>
         <input 
           type="range" 
@@ -504,6 +550,24 @@
           <span>Excellent (+3)</span>
         </div>
         <p class="slider-desc">How is your physical well-being today? Fatigue, illness, or poor sleep can impair decision-making.</p>
+      </div>
+      
+      <div class="slider-group">
+        <h3>FOMO Level: {assessment.fomoScore}</h3>
+        <input 
+          type="range" 
+          min="-3" 
+          max="3" 
+          step="1" 
+          bind:value={assessment.fomoScore} 
+          on:change={handleSliderChange}
+        />
+        <div class="scale-labels">
+          <span>Low (-3)</span>
+          <span>Medium (0)</span>
+          <span>High (+3)</span>
+        </div>
+        <p class="slider-desc">How strongly are you feeling the "Fear Of Missing Out"? Higher values indicate stronger FOMO which can lead to impulsive decisions.</p>
       </div>
       
       <div class="slider-group">
@@ -644,6 +708,20 @@
     <RiskManagementControls />
   {/if}
 </div>
+
+<!-- Stay Out Warning Modal Popup -->
+{#if showStayOutWarning}
+  <div class="stay-out-modal">
+    <button class="close-button" on:click={() => showStayOutWarning = false}>×</button>
+    <div class="modal-content">
+      <h3>⚠️ Market Warning</h3>
+      <p>
+        Your current psychological state suggests <strong>elevated risk</strong>. 
+        Consider staying out of the market today or trading with extreme caution.
+      </p>
+    </div>
+  </div>
+{/if}
 
 <style>
   .dashboard {
@@ -858,6 +936,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
   }
   
   .euphoria-flag {
@@ -870,6 +949,48 @@
   
   .fomo-flag {
     background-color: rgba(111, 66, 193, 0.2);
+  }
+  
+  .stay-out-flag {
+    background-color: rgba(220, 53, 69, 0.3);
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    animation: pulse 2s infinite;
+  }
+  
+  .close-warning-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: transparent;
+    border: none;
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+  
+  .close-warning-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: rgba(0, 0, 0, 0.8);
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
   }
   
   .flag-icon {
@@ -992,5 +1113,77 @@
   
   .save-btn:hover {
     opacity: 0.9;
+  }
+  
+  /* Stay Out Modal Popup Styles */
+  .stay-out-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--card-bg, white);
+    border: 2px solid #e53e3e; /* Red border for warning */
+    border-radius: 6px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    min-width: 300px;
+    text-align: center;
+    animation: fadeIn 0.3s ease-out, pulse 2s infinite;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  .close-button {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--text-muted, #718096);
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  
+  .close-button:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-color, #333);
+  }
+  
+  .modal-content {
+    margin: 0 auto;
+  }
+  
+  .modal-content h3 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    color: #e53e3e; /* Red text for warning */
+  }
+  
+  .modal-content p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .modal-content strong {
+    color: #e53e3e; /* Red text for emphasis */
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(229, 62, 62, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
   }
 </style> 

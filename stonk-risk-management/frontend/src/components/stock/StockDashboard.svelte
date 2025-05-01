@@ -627,7 +627,7 @@
 </script>
 
 <div class="dashboard">
-  <h2>Stock Rating Dashboard</h2>
+  <h2>Sector Rating Dashboard</h2>
   <div class="divider"></div>
   
   <p class="description">Rate market conditions, sectors, and individual stocks to identify the best trading opportunities.</p>
