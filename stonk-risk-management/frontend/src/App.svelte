@@ -5,6 +5,7 @@
   import TradeCalendar from './components/trade/TradeCalendar.svelte';
   import TradingKoans from './components/koans/TradingKoans.svelte';
   import PrivacyPolicy from './components/PrivacyPolicy.svelte';
+  import VersionPopup from './components/shared/VersionPopup.svelte';
   import { WindowSetDarkTheme, WindowSetLightTheme } from '../wailsjs/runtime/runtime';
   import { VERSION } from './version.js';
   import { RunDatabaseMaintenance } from '../wailsjs/go/main/App';
@@ -13,6 +14,7 @@
   let isDarkMode = true; // Default to dark mode to match screenshots
   const version = "v" + VERSION;
   let showPrivacyPolicy = false;
+  let showVersionPopup = true;
   
   // Reference to component instances
   let riskDashboardComponent;
@@ -338,6 +340,9 @@ Warning: This will overwrite any existing data in the application. Make a backup
       WindowSetLightTheme();
     }
     
+    // Ensure version popup is visible on startup
+    showVersionPopup = true;
+    
     // Add event listener for keyboard navigation
     window.addEventListener('keydown', handleKeydown);
     
@@ -396,7 +401,9 @@ Warning: This will overwrite any existing data in the application. Make a backup
         <button class="refresh-btn" on:click={refreshApp} title="Refresh application data">
           ↻ Refresh
         </button>
-        <span class="version">{version}</span>
+        <button class="version-btn" on:click={() => showVersionPopup = true} title="Show version information">
+          {version}
+        </button>
         <button class="theme-toggle" on:click={toggleTheme}>
           {isDarkMode ? '☀️' : '🌙'}
         </button>
@@ -458,6 +465,8 @@ Warning: This will overwrite any existing data in the application. Make a backup
   {#if showPrivacyPolicy}
     <PrivacyPolicy on:close={() => showPrivacyPolicy = false} />
   {/if}
+  
+  <VersionPopup bind:visible={showVersionPopup} />
 </main>
 
 <style>
@@ -653,15 +662,26 @@ Warning: This will overwrite any existing data in the application. Make a backup
     background-color: var(--button-hover);
   }
   
-  .version {
-    font-size: 0.8rem;
-    opacity: 0.8;
+  .version-btn {
+    background-color: transparent;
     color: var(--header-text);
+    border: none;
+    padding: 0.5rem;
+    border-radius: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: normal;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    opacity: 0.8;
   }
   
-  h1 {
-    margin: 0;
-    font-size: 1.5rem;
+  .version-btn:hover {
+    background-color: var(--button-hover);
+    opacity: 1;
   }
   
   .theme-toggle {
@@ -788,5 +808,10 @@ Warning: This will overwrite any existing data in the application. Make a backup
     .bmc-container {
       margin: 0.5rem auto;
     }
+  }
+  
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
   }
 </style>
