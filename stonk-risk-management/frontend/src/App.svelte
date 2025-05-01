@@ -419,7 +419,7 @@ Warning: This will overwrite any existing data in the application. Make a backup
         class:active={activeView === 'trade'} 
         on:click={() => switchView('trade')}
       >
-        Trades + Options Calendar
+        Trades, Calendar, Journal
       </button>
       <button 
         class:active={activeView === 'koans'} 

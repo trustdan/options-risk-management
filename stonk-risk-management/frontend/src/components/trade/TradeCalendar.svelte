@@ -17,7 +17,7 @@
   import TradeJournal from './TradeJournal.svelte';
   
   // Active tab for navigation
-  let activeTab = 'calendar'; // 'calendar', 'journal'
+  let activeTab = 'addTrade'; // 'addTrade', 'calendar', or 'journal'
   let selectedTradeForJournal = null;
   
   // Sample data for calendar
@@ -1338,10 +1338,16 @@
   <!-- Tab navigation -->
   <div class="tab-navigation">
     <button 
+      class:active={activeTab === 'addTrade'} 
+      on:click={() => activeTab = 'addTrade'}
+    >
+      Add New Trade
+    </button>
+    <button 
       class:active={activeTab === 'calendar'} 
       on:click={() => activeTab = 'calendar'}
     >
-      Trades + Options Calendar
+      Options Calendar
     </button>
     <button 
       class:active={activeTab === 'journal'} 
@@ -1355,82 +1361,12 @@
     </div>
   </div>
 
-  {#if activeTab === 'calendar'}
-    <div class="calendar-section">
-      <h2>Trades + Options Calendar</h2>
+  {#if activeTab === 'addTrade'}
+    <div class="add-trade-page">
+      <h2>Add New Options Trade</h2>
       <div class="divider"></div>
       
-      <p class="description">Track and visualize your options trades across sectors and expiration weeks.</p>
-      
-      <div class="strategy-guide">
-        <h3>Strategy Guide</h3>
-        <div class="strategy-legend">
-          {#each strategies as strategy}
-            <div class="strategy-item">
-              <span class="color-box" style="background-color: {strategy.color}"></span>
-              <span class="strategy-name">{strategy.name}</span>
-            </div>
-          {/each}
-        </div>
-      </div>
-      
-      <div class="calendar-container">
-        {#key componentKey}
-        <table class="calendar">
-          <thead>
-            <tr>
-              <th class="sector-header">Sector</th>
-              {#each weeks as week}
-                <th class="week-header">
-                  <div class="week-label">{week.label}</div>
-                  <div class="exp-date">{week.expLabel}</div>
-                </th>
-              {/each}
-            </tr>
-          </thead>
-          <tbody>
-            {#each sectors as sector}
-              <tr>
-                <td class="sector-cell">{sector}</td>
-                {#each weeks as week}
-                  <td class="trade-cell" class:has-trades={hasTrades(sector, week.number)}>
-                    {#if tradesLoaded}
-                      {#each getTradesForCell(sector, week.number) as trade (trade.id + '_' + week.number)}
-                        <div 
-                          class="trade-card"
-                          class:spanning-trade={trade.isSpanningLeg}
-                          class:span-start={trade.spanPosition === 'start'}
-                          class:span-middle={trade.spanPosition === 'middle'}
-                          class:span-end={trade.spanPosition === 'end'}
-                          style="background-color: {getStrategyColor(trade.strategy)}"
-                          on:click={() => handleTradeCardClick(trade)}
-                        >
-                          <div class="trade-symbol">{trade.symbol}</div>
-                          <div class="trade-type">{trade.type}</div>
-                          {#if trade.isSpanningLeg}
-                            <div class="trade-spanning-indicator">
-                              {#if trade.spanPosition === 'start'}
-                                ►
-                              {:else if trade.spanPosition === 'end'}
-                                ◄
-                              {:else if trade.spanPosition === 'middle'}
-                                ↔
-                              {/if}
-                            </div>
-                          {/if}
-                        </div>
-                      {/each}
-                    {/if}
-                  </td>
-                {/each}
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-        {/key}
-      </div>
-      
-      <!-- Add Sector Ratings Cheat Sheet after calendar and before add-trade-section -->
+      <!-- Sector Ratings Cheat Sheet -->
       <div class="sector-ratings-cheatsheet">
         <h3>Sector Ratings Cheat Sheet</h3>
         <div class="sector-ratings-grid">
@@ -1821,6 +1757,81 @@
             </table>
           </div>
         {/if}
+      </div>
+    </div>
+  {:else if activeTab === 'calendar'}
+    <div class="calendar-section">
+      <h2>Options Calendar</h2>
+      <div class="divider"></div>
+      
+      <p class="description">Track and visualize your options trades across sectors and expiration weeks.</p>
+      
+      <div class="strategy-guide">
+        <h3>Strategy Guide</h3>
+        <div class="strategy-legend">
+          {#each strategies as strategy}
+            <div class="strategy-item">
+              <span class="color-box" style="background-color: {strategy.color}"></span>
+              <span class="strategy-name">{strategy.name}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+      
+      <div class="calendar-container">
+        {#key componentKey}
+        <table class="calendar">
+          <thead>
+            <tr>
+              <th class="sector-header">Sector</th>
+              {#each weeks as week}
+                <th class="week-header">
+                  <div class="week-label">{week.label}</div>
+                  <div class="exp-date">{week.expLabel}</div>
+                </th>
+              {/each}
+            </tr>
+          </thead>
+          <tbody>
+            {#each sectors as sector}
+              <tr>
+                <td class="sector-cell">{sector}</td>
+                {#each weeks as week}
+                  <td class="trade-cell" class:has-trades={hasTrades(sector, week.number)}>
+                    {#if tradesLoaded}
+                      {#each getTradesForCell(sector, week.number) as trade (trade.id + '_' + week.number)}
+                        <div 
+                          class="trade-card"
+                          class:spanning-trade={trade.isSpanningLeg}
+                          class:span-start={trade.spanPosition === 'start'}
+                          class:span-middle={trade.spanPosition === 'middle'}
+                          class:span-end={trade.spanPosition === 'end'}
+                          style="background-color: {getStrategyColor(trade.strategy)}"
+                          on:click={() => handleTradeCardClick(trade)}
+                        >
+                          <div class="trade-symbol">{trade.symbol}</div>
+                          <div class="trade-type">{trade.type}</div>
+                          {#if trade.isSpanningLeg}
+                            <div class="trade-spanning-indicator">
+                              {#if trade.spanPosition === 'start'}
+                                ►
+                              {:else if trade.spanPosition === 'end'}
+                                ◄
+                              {:else if trade.spanPosition === 'middle'}
+                                ↔
+                              {/if}
+                            </div>
+                          {/if}
+                        </div>
+                      {/each}
+                    {/if}
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+        {/key}
       </div>
     </div>
   {:else if activeTab === 'journal'}
@@ -2961,5 +2972,14 @@
     font-size: 0.8rem;
     color: var(--text-color);
     line-height: 20px;
+  }
+
+  /* Add styles for the new add-trade-page */
+  .add-trade-page {
+    background-color: var(--card-bg);
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 </style> 
