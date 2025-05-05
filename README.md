@@ -5,7 +5,7 @@
 
 ## We are now live on the [Microsoft Store](https://apps.microsoft.com/detail/9n29sj4n4wnj?cid=DevShareMCLPCS&hl=en-US&gl=US)!
 
-## Head on over to the ![Releases](https://github.com/trustdan/options-risk-management/releases) page and grab the .exe
+### Or you can head on over to the ![Releases](https://github.com/trustdan/options-risk-management/releases) page and grab the .exe
 
 ![image](https://github.com/user-attachments/assets/9a56ba9f-fb22-42a8-b858-21f61950ca3f)
 ![image](https://github.com/user-attachments/assets/f02570ce-eb9b-436d-8f1b-1eab6bad20e1)
