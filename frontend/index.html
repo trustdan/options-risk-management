@@ -4,7 +4,6 @@
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Options Risk Management</title>
-    <link rel="icon" href="/favicon.ico" />
     <script>
         // Wails shim for development mode
         console.log("Initializing Wails shims for development mode");
@@ -78,7 +77,6 @@
             window.runtime = {
                 WindowSetDarkTheme: function() { console.log("Mock: WindowSetDarkTheme called") },
                 WindowSetLightTheme: function() { console.log("Mock: WindowSetLightTheme called") },
-                WindowSetSystemDefaultTheme: function() { console.log("Mock: WindowSetSystemDefaultTheme called") },
                 LogPrint: function(msg) { console.log("Wails Log:", msg) },
                 LogTrace: function(msg) { console.log("Wails Trace:", msg) },
                 LogDebug: function(msg) { console.log("Wails Debug:", msg) },
@@ -96,26 +94,7 @@
                     return null;
                 },
                 WindowReload: function() { window.location.reload() },
-                WindowReloadApp: function() { console.log("Mock: WindowReloadApp called"); window.location.reload() },
-                WindowSetTitle: function(title) { console.log(`Mock: WindowSetTitle called with ${title}`); document.title = title },
-                WindowFullscreen: function() { console.log("Mock: WindowFullscreen called") },
-                WindowUnfullscreen: function() { console.log("Mock: WindowUnfullscreen called") },
-                WindowIsFullscreen: function() { console.log("Mock: WindowIsFullscreen called"); return false },
-                WindowSetSize: function(w, h) { console.log(`Mock: WindowSetSize called: ${w}x${h}`) },
-                WindowGetSize: function() { console.log("Mock: WindowGetSize called"); return {width: 1024, height: 768} },
-                WindowCenter: function() { console.log("Mock: WindowCenter called") },
-                WindowSetPosition: function(x, y) { console.log(`Mock: WindowSetPosition called: ${x},${y}`) },
-                WindowGetPosition: function() { console.log("Mock: WindowGetPosition called"); return {x: 0, y: 0} },
-                WindowMaximise: function() { console.log("Mock: WindowMaximise called") },
-                WindowUnmaximise: function() { console.log("Mock: WindowUnmaximise called") },
-                WindowIsMaximised: function() { console.log("Mock: WindowIsMaximised called"); return false },
-                WindowMinimise: function() { console.log("Mock: WindowMinimise called") },
-                WindowUnminimise: function() { console.log("Mock: WindowUnminimise called") },
-                WindowSetMinSize: function(w, h) { console.log(`Mock: WindowSetMinSize called: ${w}x${h}`) },
-                WindowSetMaxSize: function(w, h) { console.log(`Mock: WindowSetMaxSize called: ${w}x${h}`) },
-                BrowserOpenURL: function(url) { console.log(`Mock: BrowserOpenURL called: ${url}`); window.open(url, '_blank') },
-                Environment: function() { return { platform: "windows", arch: "amd64", buildType: "development" } },
-                Quit: function() { console.log("Mock: Quit called") }
+                BrowserOpenURL: function(url) { window.open(url, '_blank') }
             };
         }
     </script>
@@ -124,4 +103,4 @@
 <div id="app"></div>
 <script src="./src/main.js" type="module"></script>
 </body>
-</html>
+</html> 
